@@ -12,7 +12,8 @@ namespace UltraWideScreenShare.WinForms
         private Magnifier _magnifier;
         private bool _isTransparent = false;
         private Color _frameColor = Color.FromArgb(255, 53, 89, 224); //#3559E0
-        const int _borderWidth = 6;
+        private const int _logicalBorderWidth = 6;
+        private int _borderWidth = 6;
         private bool _showMagnifierScheduled = true;
         public MainWindow()
         {
@@ -31,6 +32,8 @@ namespace UltraWideScreenShare.WinForms
 
         private void InitializePaddingsForBorders()
         {
+            float scale = DeviceDpi / 96f;
+            _borderWidth = (int)Math.Round(_logicalBorderWidth * scale);
             Padding = new Padding(_borderWidth, _borderWidth, _borderWidth, _borderWidth);
             TitleBar.Width += (_borderWidth * 2);
             TitleBar.Height += (_borderWidth);
@@ -152,6 +155,16 @@ namespace UltraWideScreenShare.WinForms
             {
                 maximizeButton.Image = Properties.Resources.maximize;
             }
+        }
+
+        protected override void OnDpiChanged(DpiChangedEventArgs e)
+        {
+            base.OnDpiChanged(e);
+            float scale = e.DeviceDpiNew / 96f;
+            _borderWidth = (int)Math.Round(_logicalBorderWidth * scale);
+            Padding = new Padding(_borderWidth, _borderWidth, _borderWidth, _borderWidth);
+            TitleBar.Padding = new Padding(_borderWidth, 0, _borderWidth, _borderWidth);
+            Invalidate();
         }
 
         private void DragButton_MouseDown(object sender, MouseEventArgs e)
