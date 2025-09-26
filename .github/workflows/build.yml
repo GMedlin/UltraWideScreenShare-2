@@ -1,0 +1,43 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore UltraWideScreenShare.WinForms
+
+    - name: Build
+      run: dotnet build UltraWideScreenShare.WinForms --no-restore --configuration Release
+
+    - name: Publish x64
+      run: dotnet publish UltraWideScreenShare.WinForms -c Release -r win-x64 --self-contained -o ./publish/x64
+
+    - name: Publish x86
+      run: dotnet publish UltraWideScreenShare.WinForms -c Release -r win-x86 --self-contained -o ./publish/x86
+
+    - name: Upload x64 artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: UltraWideScreenShare2-x64
+        path: ./publish/x64/
+
+    - name: Upload x86 artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: UltraWideScreenShare2-x86
+        path: ./publish/x86/
