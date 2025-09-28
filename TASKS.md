@@ -1,53 +1,24 @@
 # UltraWideScreenShare-2 Task Priority List
 
-## 🚀 New Priority: Cursor Visibility in Screen Captures
+## ✅ Completed: Cursor Visibility Investigation (2025-09-28)
 
-### Problem Description
-Mouse cursor is not visible in OBS captures or screen sharing tools when other windows are focused. This is a core limitation of Desktop Duplication API.
+### Resolution
+After extensive investigation, it was discovered that the **cursor was being captured correctly all along** using the Windows Magnification API. The issue was specific to OBS Game Capture mode when the application window is not focused - this is OBS-specific behavior, not a limitation of our implementation.
 
-### Issues Experienced
-1. **Desktop Duplication API Limitation**: API never includes cursor in captured frames - cursor is hardware overlay
-2. **Complex Manual Compositing**: Attempted cursor rendering resulted in:
-   - Odd-looking boxes instead of proper cursor
-   - Pink triangles when using alpha blending
-   - Complex data format interpretation (BGRA, pitch, hotspot calculations)
-   - Performance overhead with CPU-based pixel manipulation
+**Key Findings:**
+- Microsoft Teams and other screen sharing tools capture the cursor correctly
+- OBS Window Capture mode works correctly (Game Capture has focus-specific behavior)
+- The Windows Magnification API implementation on master branch is working as intended
+- No changes to the capture implementation are needed
 
-### Approaches Tried
-1. **Manual Cursor Compositing** ❌
-   - Captured cursor data from `GetFramePointerShape`
-   - Attempted CPU-based alpha blending
-   - Result: Visual artifacts, incorrect rendering
+**Documentation Added:**
+- Created TROUBLESHOOTING.md with guidance for OBS users
+- Archived experimental Windows Graphics Capture API branch as `archive/wgc-experiment` for reference
 
-2. **Windows Graphics Capture API Migration** ❌ (Incomplete)
-   - Modern API with `IsCursorCaptureEnabled = true` property
-   - Result: Complex migration, build errors, interop complexity
-
-### Recommended Next Approach
-**Use a proven screen capture library that handles cursor automatically:**
-
-- **ScreenCapture.NET**: Modern .NET library with built-in cursor support
-- **FFMpegCore with screen capture**: Handles cursor compositing natively
-- **Windows.Graphics.Capture wrapper libraries**: Pre-built solutions for cursor handling
-
-### Future Implementation Prompt
-```
-"I need to add mouse cursor visibility to screen captures in my .NET 9 Windows Forms application. Currently using Desktop Duplication API but cursor isn't visible in OBS/screen sharing tools.
-
-Requirements:
-- Show cursor in all capture scenarios (OBS, Teams, etc.)
-- Maintain current crisp display quality (using DXGI Scaling.None)
-- Keep existing architecture if possible
-- Must work when other windows are focused
-
-Current setup:
-- .NET 9 Windows Forms app
-- Desktop Duplication API with DirectX 11
-- Vortice.Direct3D11 and Vortice.DXGI packages
-- Custom transparency handling with TransparencyKey
-
-Please recommend and implement the simplest, most reliable solution - whether that's using a proven library, migrating to Windows Graphics Capture API with proper interop, or another approach."
-```
+### For OBS Users
+- Use Window Capture mode instead of Game Capture
+- Or keep the UltraWideScreenShare window focused during capture
+- See TROUBLESHOOTING.md for details
 
 ## Development Workflow
 
