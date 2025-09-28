@@ -49,15 +49,20 @@ jobs:
         Write-Host "Certificate created with thumbprint: $($cert.Thumbprint)"
       shell: pwsh
 
+    # Move certificate to project directory for MSIX packaging
+    - name: Move certificate to project directory
+      shell: pwsh
+      run: Move-Item -Force "UltraWideScreenShare2-Test.pfx" "$env:Project_Dir\UltraWideScreenShare2-Test.pfx"
+
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
       run: dotnet restore $env:Solution_Name
       env:
         Configuration: ${{ matrix.configuration }}
 
-    # Build app
-    - name: Build the application
-      run: dotnet publish $env:Project_Path -c $env:Configuration -p:PublishReadyToRun=true -p:PublishSingleFile=true --self-contained true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -r ${{ matrix.rid }}
+    # Build app (portable)
+    - name: Build the application (portable)
+      run: dotnet publish $env:Project_Path -c $env:Configuration -p:GenerateAppxPackageOnBuild=false -p:PublishReadyToRun=true -p:PublishSingleFile=true --self-contained true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -r ${{ matrix.rid }}
       env:
         Configuration: ${{ matrix.configuration }}
 
@@ -88,7 +93,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: UltraWideScreenShare2-${{ matrix.rid }}
-        path: ${{ env.Project_Dir }}\bin\${{ matrix.configuration }}\net9.0-windows10.0.22621.0\${{ matrix.rid }}\publish\
+        path: ${{ env.Project_Dir }}\bin\${{ matrix.configuration }}\net9.0-windows*\${{ matrix.rid }}\publish\
         compression-level: 1
 
     # Upload MSIX package artifacts
@@ -105,7 +110,13 @@ jobs:
 
     - name: Create portable app zip
       shell: pwsh
-      run: Compress-Archive -Path ${{ env.Project_Dir }}\bin\${{ matrix.configuration }}\net9.0-windows10.0.22621.0\${{ matrix.rid }}\publish\* -Destination UltraWideScreenShare2-${{ matrix.rid }}.zip
+      run: |
+        $publishPath = Get-ChildItem -Path "${{ env.Project_Dir }}\bin\${{ matrix.configuration }}" -Directory -Filter "net9.0-windows*" | Select-Object -First 1
+        if ($publishPath) {
+          Compress-Archive -Path "$($publishPath.FullName)\${{ matrix.rid }}\publish\*" -Destination UltraWideScreenShare2-${{ matrix.rid }}.zip
+        } else {
+          Write-Error "Could not find publish directory"
+        }
 
     - name: Create MSIX bundle zip
       shell: pwsh

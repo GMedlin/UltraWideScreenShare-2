@@ -45,9 +45,10 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.2428" PrivateAssets="all" />
     <PackageReference Include="Vortice.Direct3D11" Version="3.3.4" />
     <PackageReference Include="Vortice.DXGI" Version="3.3.4" />
-    
+
   </ItemGroup>
 
   <ItemGroup>
