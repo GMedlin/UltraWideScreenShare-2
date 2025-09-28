@@ -44,7 +44,7 @@ namespace UltraWideScreenShare.WinForms
         {
             float scale = dpi / 96f;
             _borderWidth = Math.Max(1, (int)Math.Round(_logicalBorderWidth * scale));
-            _titleBarHeight = Math.Max(28, (int)Math.Round(_logicalTitleBarHeight * scale));
+            _titleBarHeight = (int)Math.Round(_logicalTitleBarHeight * scale);
             Padding = new Padding(_borderWidth);
         }
 

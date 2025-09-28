@@ -83,10 +83,14 @@ namespace UltraWideScreenShare.WinForms
         {
             base.OnHandleCreated(e);
 
+            // Calculate DPI-aware height (32px at 100% scaling)
+            int dpi = DeviceDpi;
+            int targetHeight = (int)Math.Round(32 * (dpi / 96.0));
+
             // Disable all auto-sizing to prevent height inflation
             this.AutoSize = false;
             this.MinimumSize = new Size(0, 0);
-            this.MaximumSize = new Size(int.MaxValue, 32);
+            this.MaximumSize = new Size(int.MaxValue, targetHeight);
             this.Padding = new Padding(0);
 
             rootPanel.AutoSize = false;
@@ -98,8 +102,8 @@ namespace UltraWideScreenShare.WinForms
             buttonStrip.Padding = new Padding(0);
             buttonStrip.Margin = new Padding(0);
 
-            // Ensure exact height
-            ApplyScale(32);
+            // Ensure exact DPI-aware height
+            ApplyScale(targetHeight);
         }
 
         protected override void OnShown(EventArgs e)
