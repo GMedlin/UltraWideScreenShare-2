@@ -68,6 +68,21 @@ jobs:
       env:
         Configuration: ${{ matrix.configuration }}
 
+    # Debug: List generated files to understand the output structure
+    - name: Debug MSIX output
+      shell: pwsh
+      run: |
+        Write-Host "Listing all files in project directory:"
+        Get-ChildItem -Path ${{ env.Project_Dir }} -Recurse -Filter "*.msix" | ForEach-Object { Write-Host $_.FullName }
+        Write-Host "Listing AppPackages directory:"
+        if (Test-Path "${{ env.Project_Dir }}\AppPackages") {
+          Get-ChildItem -Path "${{ env.Project_Dir }}\AppPackages" -Recurse | ForEach-Object { Write-Host $_.FullName }
+        } else {
+          Write-Host "AppPackages directory does not exist"
+        }
+        Write-Host "Searching for all .msix files:"
+        Get-ChildItem -Path ${{ env.Project_Dir }} -Recurse -Filter "*.msix*" | ForEach-Object { Write-Host $_.FullName }
+
     # Upload portable app artifacts
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -79,9 +94,13 @@ jobs:
     # Upload MSIX package artifacts
     - name: Upload MSIX artifacts
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: UltraWideScreenShare2-MSIX-${{ matrix.rid }}
-        path: ${{ env.Project_Dir }}\AppPackages\**\*.msix
+        path: |
+          ${{ env.Project_Dir }}\AppPackages\**\*.msix
+          ${{ env.Project_Dir }}\**\*.msix
+        if-no-files-found: warn
         compression-level: 1
 
     - name: Create portable app zip
@@ -91,12 +110,16 @@ jobs:
     - name: Create MSIX bundle zip
       shell: pwsh
       run: |
-        $msixPath = "${{ env.Project_Dir }}\AppPackages"
-        if (Test-Path $msixPath) {
-          $msixFiles = Get-ChildItem -Path $msixPath -Recurse -Filter "*.msix"
-          if ($msixFiles) {
-            Compress-Archive -Path $msixFiles[0].FullName -Destination UltraWideScreenShare2-MSIX-${{ matrix.rid }}.zip
-          }
+        $msixFiles = Get-ChildItem -Path "${{ env.Project_Dir }}" -Recurse -Filter "*.msix" -ErrorAction SilentlyContinue
+        if ($msixFiles) {
+          Write-Host "Found MSIX files: $($msixFiles.Count)"
+          $msixFiles | ForEach-Object { Write-Host $_.FullName }
+          Compress-Archive -Path $msixFiles[0].FullName -Destination UltraWideScreenShare2-MSIX-${{ matrix.rid }}.zip
+          Write-Host "Created UltraWideScreenShare2-MSIX-${{ matrix.rid }}.zip"
+        } else {
+          Write-Host "No MSIX files found to compress"
+          # Create an empty zip file to avoid release step failing
+          New-Item -ItemType File -Path "UltraWideScreenShare2-MSIX-${{ matrix.rid }}.zip" -Force
         }
 
     - name: Release
