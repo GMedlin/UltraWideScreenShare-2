@@ -65,6 +65,7 @@ namespace UltraWideScreenShare.WinForms
 
             // Explicitly set buttonStrip size and position
             buttonStrip.Height = targetHeight;
+            buttonStrip.Width = buttonWidth * 3; // Fit exactly 3 buttons; no extra gaps since margins/padding are 0
             buttonStrip.Location = new Point(buttonStrip.Location.X, 0);
 
             rootPanel.Padding = new Padding(12, 0, 0, 0);
@@ -111,6 +112,7 @@ namespace UltraWideScreenShare.WinForms
 
             buttonStrip.AutoSize = false;
             buttonStrip.WrapContents = false;
+            buttonStrip.AutoScroll = false;
             buttonStrip.Padding = new Padding(0);
             buttonStrip.Margin = new Padding(0);
 
@@ -215,16 +217,16 @@ namespace UltraWideScreenShare.WinForms
         {
             // Get base system metrics at 96 DPI
             int baseCaptionHeight = GetSystemMetrics(SM_CYCAPTION);
-            int baseButtonWidth = GetSystemMetrics(SM_CXSIZE);
             int baseButtonHeight = GetSystemMetrics(SM_CYSIZE);
 
             // Scale for current DPI
             float scale = dpi / 96.0f;
             int captionHeight = (int)Math.Round(baseCaptionHeight * scale);
-
-            // Windows standard: title bar buttons are approximately 1.5x SM_CXSIZE for proper appearance
-            int buttonWidth = (int)Math.Round(baseButtonWidth * 1.5f * scale);
             int buttonHeight = (int)Math.Round(baseButtonHeight * scale);
+
+            // Windows standard: title bar buttons are typically 1.4x the caption height
+            // This provides consistent sizing across all DPI levels
+            int buttonWidth = (int)Math.Round(captionHeight * 1.4f);
 
             return (captionHeight, buttonWidth, buttonHeight);
         }

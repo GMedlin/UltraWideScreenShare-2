@@ -56,7 +56,7 @@ namespace UltraWideScreenShare.WinForms
             titleLabel.Margin = new Padding(0);
             titleLabel.Name = "titleLabel";
             titleLabel.Padding = new Padding(4, 0, 0, 0);
-            titleLabel.Size = new Size(453, 32);
+            titleLabel.Size = new Size(483, 32);
             titleLabel.TabIndex = 1;
             titleLabel.Text = "Ultra Wide Screen Share";
             titleLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -69,11 +69,11 @@ namespace UltraWideScreenShare.WinForms
             buttonStrip.AutoSize = false;
             buttonStrip.Dock = DockStyle.Right;
             buttonStrip.FlowDirection = FlowDirection.RightToLeft;
-            buttonStrip.Location = new Point(465, 0);
+            buttonStrip.Location = new Point(495, 0);
             buttonStrip.Margin = new Padding(0);
             buttonStrip.Name = "buttonStrip";
             buttonStrip.Padding = new Padding(0);
-            buttonStrip.Size = new Size(135, 32);
+            buttonStrip.Size = new Size(115, 32);
             buttonStrip.TabIndex = 2;
             buttonStrip.WrapContents = false;
 
