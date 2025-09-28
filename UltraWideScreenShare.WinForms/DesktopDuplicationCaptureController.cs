@@ -26,6 +26,8 @@ namespace UltraWideScreenShare.WinForms
         private Size _currentRegionSize;
         private IntPtr _monitorHandle;
 
+        // Cursor support removed - see TASKS.md for future implementation
+
         private const int DxgiErrorWaitTimeout = unchecked((int)0x887A0027);
         private const int DxgiErrorAccessLost = unchecked((int)0x887A0026);
 
@@ -213,6 +215,9 @@ namespace UltraWideScreenShare.WinForms
             var region = new Box(offsetX, offsetY, 0, offsetX + intersected.Width, offsetY + intersected.Height, 1);
 
             _context.CopySubresourceRegion(backBuffer, 0, 0, 0, 0, frameTexture, 0, region);
+
+            // No cursor compositing - see TASKS.md for future cursor implementation
+
             _swapChain.Present(1, PresentFlags.None);
         }
 
@@ -236,7 +241,7 @@ namespace UltraWideScreenShare.WinForms
                     SampleDescription = new SampleDescription(1, 0),
                     BufferUsage = Usage.RenderTargetOutput,
                     BufferCount = 2,
-                    Scaling = Scaling.Stretch,
+                    Scaling = Scaling.None,
                     SwapEffect = SwapEffect.FlipSequential,
                     AlphaMode = AlphaMode.Ignore,
                     Flags = SwapChainFlags.None
@@ -258,6 +263,8 @@ namespace UltraWideScreenShare.WinForms
 
             _currentRegionSize = targetSize;
         }
+
+        // Cursor-related methods removed - see TASKS.md for future implementation
 
         private void DisposeDuplication()
         {
