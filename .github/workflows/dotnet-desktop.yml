@@ -16,13 +16,12 @@ jobs:
       matrix:
         configuration: [Release]
         rid: [win-x86, win-x64]
-    runs-on: windows-latest  # For a list of available runner types, refer to
-                             # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
+    runs-on: windows-latest
 
     env:
       Solution_Name: UltraWideScreenShare2.sln
       Project_Path: UltraWideScreenShare.WinForms\UltraWideScreenShare.WinForms.csproj
-      Project_Dir: UltraWideScreenShare.WinForms 
+      Project_Dir: UltraWideScreenShare.WinForms
 
     steps:
     - name: Checkout
@@ -36,25 +35,7 @@ jobs:
       with:
         dotnet-version: 9.0.x
 
-    # Add MSBuild to the PATH
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
-
-    # Create test certificate for MSIX signing
-    - name: Create test certificate
-      run: |
-        $cert = New-SelfSignedCertificate -Subject "CN=UltraWideScreenShare2-Test" -Type CodeSigningCert -CertStoreLocation "Cert:\CurrentUser\My" -HashAlgorithm SHA256
-        $securePassword = ConvertTo-SecureString -String "test123" -Force -AsPlainText
-        Export-PfxCertificate -Cert $cert -FilePath "UltraWideScreenShare2-Test.pfx" -Password $securePassword
-        Write-Host "Certificate created with thumbprint: $($cert.Thumbprint)"
-      shell: pwsh
-
-    # Move certificate to project directory for MSIX packaging
-    - name: Move certificate to project directory
-      shell: pwsh
-      run: Move-Item -Force "UltraWideScreenShare2-Test.pfx" "$env:Project_Dir\UltraWideScreenShare2-Test.pfx"
-
-    # Restore the application to populate the obj folder with RuntimeIdentifiers
+    # Restore the application
     - name: Restore the application
       run: dotnet restore $env:Solution_Name
       env:
@@ -62,31 +43,9 @@ jobs:
 
     # Build app (portable)
     - name: Build the application (portable)
-      run: dotnet publish $env:Project_Path -c $env:Configuration -p:GenerateAppxPackageOnBuild=false -p:PublishReadyToRun=true -p:PublishSingleFile=true --self-contained true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -r ${{ matrix.rid }}
+      run: dotnet publish $env:Project_Path -c $env:Configuration -p:PublishReadyToRun=true -p:PublishSingleFile=true --self-contained true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -r ${{ matrix.rid }}
       env:
         Configuration: ${{ matrix.configuration }}
-
-    # Build MSIX package using single-project MSIX
-    - name: Build MSIX package
-      run: |
-        msbuild $env:Project_Path /t:Publish /p:Configuration=$env:Configuration /p:RuntimeIdentifier=${{ matrix.rid }} /p:Platform=${{ matrix.rid == 'win-x64' && 'x64' || 'x86' }} /p:GenerateAppxPackageOnBuild=true /p:AppxPackageSigningEnabled=true /p:PackageCertificateKeyFile="UltraWideScreenShare2-Test.pfx" /p:PackageCertificatePassword="test123"
-      env:
-        Configuration: ${{ matrix.configuration }}
-
-    # Debug: List generated files to understand the output structure
-    - name: Debug MSIX output
-      shell: pwsh
-      run: |
-        Write-Host "Listing all files in project directory:"
-        Get-ChildItem -Path ${{ env.Project_Dir }} -Recurse -Filter "*.msix" | ForEach-Object { Write-Host $_.FullName }
-        Write-Host "Listing AppPackages directory:"
-        if (Test-Path "${{ env.Project_Dir }}\AppPackages") {
-          Get-ChildItem -Path "${{ env.Project_Dir }}\AppPackages" -Recurse | ForEach-Object { Write-Host $_.FullName }
-        } else {
-          Write-Host "AppPackages directory does not exist"
-        }
-        Write-Host "Searching for all .msix files:"
-        Get-ChildItem -Path ${{ env.Project_Dir }} -Recurse -Filter "*.msix*" | ForEach-Object { Write-Host $_.FullName }
 
     # Upload portable app artifacts
     - name: Upload build artifacts
@@ -96,47 +55,19 @@ jobs:
         path: ${{ env.Project_Dir }}\bin\${{ matrix.configuration }}\net9.0-windows*\${{ matrix.rid }}\publish\
         compression-level: 1
 
-    # Upload MSIX package artifacts
-    - name: Upload MSIX artifacts
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: UltraWideScreenShare2-MSIX-${{ matrix.rid }}
-        path: |
-          ${{ env.Project_Dir }}\AppPackages\**\*.msix
-          ${{ env.Project_Dir }}\**\*.msix
-        if-no-files-found: warn
-        compression-level: 1
-
     - name: Create portable app zip
       shell: pwsh
       run: |
         $publishPath = Get-ChildItem -Path "${{ env.Project_Dir }}\bin\${{ matrix.configuration }}" -Directory -Filter "net9.0-windows*" | Select-Object -First 1
         if ($publishPath) {
           Compress-Archive -Path "$($publishPath.FullName)\${{ matrix.rid }}\publish\*" -Destination UltraWideScreenShare2-${{ matrix.rid }}.zip
+          Write-Host "Created UltraWideScreenShare2-${{ matrix.rid }}.zip"
         } else {
           Write-Error "Could not find publish directory"
-        }
-
-    - name: Create MSIX bundle zip
-      shell: pwsh
-      run: |
-        $msixFiles = Get-ChildItem -Path "${{ env.Project_Dir }}" -Recurse -Filter "*.msix" -ErrorAction SilentlyContinue
-        if ($msixFiles) {
-          Write-Host "Found MSIX files: $($msixFiles.Count)"
-          $msixFiles | ForEach-Object { Write-Host $_.FullName }
-          Compress-Archive -Path $msixFiles[0].FullName -Destination UltraWideScreenShare2-MSIX-${{ matrix.rid }}.zip
-          Write-Host "Created UltraWideScreenShare2-MSIX-${{ matrix.rid }}.zip"
-        } else {
-          Write-Host "No MSIX files found to compress"
-          # Create an empty zip file to avoid release step failing
-          New-Item -ItemType File -Path "UltraWideScreenShare2-MSIX-${{ matrix.rid }}.zip" -Force
         }
 
     - name: Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: |
-          UltraWideScreenShare2-${{ matrix.rid }}.zip
-          UltraWideScreenShare2-MSIX-${{ matrix.rid }}.zip
+        files: UltraWideScreenShare2-${{ matrix.rid }}.zip
