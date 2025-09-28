@@ -39,6 +39,15 @@ namespace UltraWideScreenShare.WinForms
 
         public void ApplyScale(int targetHeight)
         {
+            // Use system metrics for proper scaling
+            int dpi = DeviceDpi;
+            int btnWidth = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CXSIZE, (uint)dpi);
+            int btnHeight = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CYSIZE, (uint)dpi);
+            ApplyScaleWithMetrics(targetHeight, btnWidth, btnHeight);
+        }
+
+        public void ApplyScaleWithMetrics(int targetHeight, int buttonWidth, int buttonHeight)
+        {
             if (targetHeight <= 0 || targetHeight == _currentHeight)
             {
                 return;
@@ -47,13 +56,11 @@ namespace UltraWideScreenShare.WinForms
             _currentHeight = targetHeight;
             ClientSize = new Size(ClientSize.Width, targetHeight);
 
-            int buttonWidth = 46;
-            int buttonHeight = targetHeight;
-
             foreach (var button in new[] { minimizeButton, maximizeButton, closeButton })
             {
                 button.Size = new Size(buttonWidth, buttonHeight);
                 button.Margin = new Padding(0);
+                button.TabStop = false;
             }
 
             // Explicitly set buttonStrip size and position
@@ -83,13 +90,20 @@ namespace UltraWideScreenShare.WinForms
         {
             base.OnHandleCreated(e);
 
-            // Calculate DPI-aware height (32px at 100% scaling)
+            // Calculate caption metrics from Windows system for current DPI
             int dpi = DeviceDpi;
-            int targetHeight = (int)Math.Round(32 * (dpi / 96.0));
+            int capHeight = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CYCAPTION, (uint)dpi);
+            int btnWidth = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CXSIZE, (uint)dpi);
+            int btnHeight = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CYSIZE, (uint)dpi);
+            int targetHeight = capHeight;
+
+            // Use system caption font for proper alignment
+            this.Font = SystemFonts.CaptionFont;
+            titleLabel.Font = SystemFonts.CaptionFont;
 
             // Disable all auto-sizing to prevent height inflation
             this.AutoSize = false;
-            this.MinimumSize = new Size(0, 0);
+            this.MinimumSize = new Size(0, targetHeight);
             this.MaximumSize = new Size(int.MaxValue, targetHeight);
             this.Padding = new Padding(0);
 
@@ -102,8 +116,8 @@ namespace UltraWideScreenShare.WinForms
             buttonStrip.Padding = new Padding(0);
             buttonStrip.Margin = new Padding(0);
 
-            // Ensure exact DPI-aware height
-            ApplyScale(targetHeight);
+            // Ensure exact system-metric height
+            ApplyScaleWithMetrics(targetHeight, btnWidth, btnHeight);
         }
 
         protected override void OnShown(EventArgs e)
@@ -164,6 +178,31 @@ namespace UltraWideScreenShare.WinForms
         private void Root_DoubleClick(object? sender, EventArgs e)
         {
             MaximizeRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            const int WM_DPICHANGED = 0x02E0;
+            if (m.Msg == WM_DPICHANGED)
+            {
+                // LOWORD = X dpi, HIWORD = Y dpi (typically equal)
+                int newDpi = (int)(m.WParam.ToInt64() & 0xFFFF);
+                int capHeight = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CYCAPTION, (uint)newDpi);
+                int btnWidth = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CXSIZE, (uint)newDpi);
+                int btnHeight = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CYSIZE, (uint)newDpi);
+
+                // Update fonts for new DPI
+                this.Font = SystemFonts.CaptionFont;
+                titleLabel.Font = SystemFonts.CaptionFont;
+
+                // Update height constraints
+                this.MinimumSize = new Size(0, capHeight);
+                this.MaximumSize = new Size(int.MaxValue, capHeight);
+
+                ApplyScaleWithMetrics(capHeight, btnWidth, btnHeight);
+                return;
+            }
+            base.WndProc(ref m);
         }
     }
 }

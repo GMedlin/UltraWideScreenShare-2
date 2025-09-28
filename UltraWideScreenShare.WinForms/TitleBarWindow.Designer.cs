@@ -56,7 +56,7 @@ namespace UltraWideScreenShare.WinForms
             titleLabel.Margin = new Padding(0);
             titleLabel.Name = "titleLabel";
             titleLabel.Padding = new Padding(4, 0, 0, 0);
-            titleLabel.Size = new Size(444, 44);
+            titleLabel.Size = new Size(444, 32);
             titleLabel.TabIndex = 1;
             titleLabel.Text = "Ultra Wide Screen Share";
             titleLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -81,7 +81,7 @@ namespace UltraWideScreenShare.WinForms
             // minimizeButton
             //
             minimizeButton.FlatStyle = FlatStyle.Flat;
-            minimizeButton.Location = new Point(80, 6);
+            minimizeButton.Location = new Point(80, 0);
             minimizeButton.Margin = new Padding(0);
             minimizeButton.Name = "minimizeButton";
             minimizeButton.Size = new Size(52, 32);
@@ -93,7 +93,7 @@ namespace UltraWideScreenShare.WinForms
             // maximizeButton
             //
             maximizeButton.FlatStyle = FlatStyle.Flat;
-            maximizeButton.Location = new Point(28, 6);
+            maximizeButton.Location = new Point(28, 0);
             maximizeButton.Margin = new Padding(0);
             maximizeButton.Name = "maximizeButton";
             maximizeButton.Size = new Size(52, 32);
@@ -105,7 +105,7 @@ namespace UltraWideScreenShare.WinForms
             // closeButton
             //
             closeButton.FlatStyle = FlatStyle.Flat;
-            closeButton.Location = new Point(0, 6);
+            closeButton.Location = new Point(0, 0);
             closeButton.Margin = new Padding(0);
             closeButton.Name = "closeButton";
             closeButton.Size = new Size(28, 32);
