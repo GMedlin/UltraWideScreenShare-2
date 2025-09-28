@@ -69,7 +69,7 @@ jobs:
     # Build MSIX package using single-project MSIX
     - name: Build MSIX package
       run: |
-        msbuild $env:Project_Path /p:Configuration=$env:Configuration /p:Platform=${{ matrix.rid == 'win-x64' && 'x64' || 'x86' }} /p:PackageCertificateKeyFile="UltraWideScreenShare2-Test.pfx" /p:PackageCertificatePassword="test123" /p:AppxPackageSigningEnabled=true /p:GenerateAppxPackageOnBuild=true
+        msbuild $env:Project_Path /t:Publish /p:Configuration=$env:Configuration /p:RuntimeIdentifier=${{ matrix.rid }} /p:Platform=${{ matrix.rid == 'win-x64' && 'x64' || 'x86' }} /p:GenerateAppxPackageOnBuild=true /p:AppxPackageSigningEnabled=true /p:PackageCertificateKeyFile="UltraWideScreenShare2-Test.pfx" /p:PackageCertificatePassword="test123"
       env:
         Configuration: ${{ matrix.configuration }}
 
