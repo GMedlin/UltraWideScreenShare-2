@@ -42,10 +42,10 @@ namespace UltraWideScreenShare.WinForms
             closeButton = new Button();
             TitleBar.SuspendLayout();
             SuspendLayout();
-            // 
+            //
             // magnifierPanel
-            // 
-            magnifierPanel.BackColor = Color.Transparent;
+            //
+            magnifierPanel.BackColor = Color.Black;
             magnifierPanel.Dock = DockStyle.Fill;
             magnifierPanel.Location = new Point(8, 8);
             magnifierPanel.Margin = new Padding(0);
