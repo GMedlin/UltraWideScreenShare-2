@@ -15,29 +15,10 @@
     <SupportedOSPlatformVersion>10.0.22621.0</SupportedOSPlatformVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
-    <!-- Single-Project MSIX properties -->
-    <EnableMsixTooling>true</EnableMsixTooling>
-    <WindowsPackageType>MSIX</WindowsPackageType>
-    <GenerateAppxPackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GenerateAppxPackageOnBuild>
-    <AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
-    <PackageCertificateKeyFile Condition="'$(PackageCertificateKeyFile)' == ''">UltraWideScreenShare2-Test.pfx</PackageCertificateKeyFile>
-    <PackageCertificatePassword Condition="'$(PackageCertificatePassword)' == ''">test123</PackageCertificatePassword>
-    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
-    <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
-    <GenerateTestArtifacts>True</GenerateTestArtifacts>
-    <AppxBundle>Never</AppxBundle>
-    <AppxPackageDir>AppPackages\</AppxPackageDir>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="Resources\icon-uwsh.ico" />
-    <!-- MSIX Package Assets -->
-    <Content Include="Images\*.png" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- MSIX Package Manifest -->
-    <AppxManifest Include="Package.appxmanifest" />
   </ItemGroup>
 
   <ItemGroup>
