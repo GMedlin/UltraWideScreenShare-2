@@ -20,9 +20,11 @@ jobs:
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
 
     env:
-      Solution_Name: UltraWideScreenShare2.sln 
+      Solution_Name: UltraWideScreenShare2.sln
       Project_Path: UltraWideScreenShare.WinForms\UltraWideScreenShare.WinForms.csproj
-      Project_Dir: UltraWideScreenShare.WinForms 
+      Project_Dir: UltraWideScreenShare.WinForms
+      Package_Project_Path: UltraWideScreenShare.Package\UltraWideScreenShare.Package.wapproj
+      Package_Project_Dir: UltraWideScreenShare.Package 
 
     steps:
     - name: Checkout
@@ -36,6 +38,19 @@ jobs:
       with:
         dotnet-version: 9.0.x
 
+    # Add MSBuild to the PATH
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    # Create test certificate for MSIX signing
+    - name: Create test certificate
+      run: |
+        $cert = New-SelfSignedCertificate -Subject "CN=UltraWideScreenShare2-Test" -Type CodeSigningCert -CertStoreLocation "Cert:\CurrentUser\My" -HashAlgorithm SHA256
+        $securePassword = ConvertTo-SecureString -String "test123" -Force -AsPlainText
+        Export-PfxCertificate -Cert $cert -FilePath "UltraWideScreenShare2-Test.pfx" -Password $securePassword
+        Write-Host "Certificate created with thumbprint: $($cert.Thumbprint)"
+      shell: pwsh
+
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
       run: dotnet restore $env:Solution_Name
@@ -45,23 +60,51 @@ jobs:
     # Build app
     - name: Build the application
       run: dotnet publish $env:Project_Path -c $env:Configuration -p:PublishReadyToRun=true -p:PublishSingleFile=true --self-contained true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -r ${{ matrix.rid }}
-      env:  
+      env:
         Configuration: ${{ matrix.configuration }}
 
-    # Upload files
+    # Build MSIX package
+    - name: Build MSIX package
+      run: |
+        msbuild $env:Package_Project_Path /p:Configuration=$env:Configuration /p:Platform=${{ matrix.rid == 'win-x64' && 'x64' || 'x86' }} /p:PackageCertificateKeyFile="UltraWideScreenShare2-Test.pfx" /p:PackageCertificatePassword="test123" /p:AppxPackageSigningEnabled=true
+      env:
+        Configuration: ${{ matrix.configuration }}
+
+    # Upload portable app artifacts
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: UltraWideScreenShare2-${{ matrix.rid }}
         path: ${{ env.Project_Dir }}\bin\${{ matrix.configuration }}\net9.0-windows10.0.22621.0\${{ matrix.rid }}\publish\
         compression-level: 1
-  
-    - name: Perform a Pester test from the command-line
+
+    # Upload MSIX package artifacts
+    - name: Upload MSIX artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: UltraWideScreenShare2-MSIX-${{ matrix.rid }}
+        path: ${{ env.Package_Project_Dir }}\AppPackages\**\*.msix
+        compression-level: 1
+
+    - name: Create portable app zip
       shell: pwsh
-      run: Compress-Archive -Path ${{ env.Project_Dir }}\bin\${{ matrix.configuration }}\net9.0-windows10.0.22621.0\${{ matrix.rid }}\publish\* -Destination UltraWideScreenShare2-${{ matrix.rid }}.zip      
+      run: Compress-Archive -Path ${{ env.Project_Dir }}\bin\${{ matrix.configuration }}\net9.0-windows10.0.22621.0\${{ matrix.rid }}\publish\* -Destination UltraWideScreenShare2-${{ matrix.rid }}.zip
+
+    - name: Create MSIX bundle zip
+      shell: pwsh
+      run: |
+        $msixPath = "${{ env.Package_Project_Dir }}\AppPackages"
+        if (Test-Path $msixPath) {
+          $msixFiles = Get-ChildItem -Path $msixPath -Recurse -Filter "*.msix"
+          if ($msixFiles) {
+            Compress-Archive -Path $msixFiles[0].FullName -Destination UltraWideScreenShare2-MSIX-${{ matrix.rid }}.zip
+          }
+        }
 
     - name: Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: UltraWideScreenShare2-${{ matrix.rid }}.zip
+        files: |
+          UltraWideScreenShare2-${{ matrix.rid }}.zip
+          UltraWideScreenShare2-MSIX-${{ matrix.rid }}.zip

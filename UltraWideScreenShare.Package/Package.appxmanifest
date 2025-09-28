@@ -8,8 +8,8 @@
 
   <Identity
     Name="49836MichalSilski.UltraWideScreenShare2.0"
-    Publisher="CN=5700CC75-07A0-42EB-AD16-6244A1B9A64F"
-    Version="1.0.14.0" />
+    Publisher="CN=UltraWideScreenShare2-Test"
+    Version="1.0.0.0" />
 
   <Properties>
     <DisplayName>Ultra Wide Screen Share 2.0</DisplayName>
