@@ -1,4 +1,4 @@
-﻿MagInitialize
+MagInitialize
 SetLayeredWindowAttributes
 SetWindowsHookEx
 CreateWindowEx
@@ -16,3 +16,7 @@ MonitorFromWindow
 EnumDisplaySettings
 GetMonitorInfo
 MagSetWindowTransform
+GetAncestor
+MagSetWindowFilterList
+MagUninitialize
+SetWindowDisplayAffinity
