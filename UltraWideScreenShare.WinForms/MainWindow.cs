@@ -1,6 +1,8 @@
+using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Windows.Win32;
@@ -13,19 +15,22 @@ namespace UltraWideScreenShare.WinForms
     public partial class MainWindow : Form
     {
         private readonly Timer _dispatcherTimer = new() { Interval = 16 };
-        private Point _tittleBarLocation = Point.Empty;
+        private readonly Timer _savePositionTimer = new() { Interval = 750 };
         private DesktopDuplicationCaptureController? _captureController;
+        private TitleBarWindow? _titleBarWindow;
         private bool _isTransparent;
         private Color _frameColor = Color.FromArgb(255, 255, 221, 0);
         private const int _logicalBorderWidth = 6;
+        private const int _logicalTitleBarHeight = 44;
         private int _borderWidth = 6;
+        private int _titleBarHeight = _logicalTitleBarHeight;
 
         public MainWindow()
         {
             InitializeComponent();
-            TitleBar.BringToFront();
-            InitializePaddingsForBorders();
+            InitializeScalingDependentMetrics(DeviceDpi);
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+            _savePositionTimer.Tick += SavePositionTimer_Tick;
         }
 
         protected override void OnCreateControl()
@@ -34,23 +39,15 @@ namespace UltraWideScreenShare.WinForms
             this.InitializeMainWindowStyle();
         }
 
-        private void InitializePaddingsForBorders()
+        private void InitializeScalingDependentMetrics(int dpi)
         {
-            float scale = DeviceDpi / 96f;
-            _borderWidth = (int)Math.Round(_logicalBorderWidth * scale);
-            Padding = new Padding(_borderWidth, _borderWidth, _borderWidth, _borderWidth);
-            TitleBar.Width += (_borderWidth * 2);
-            TitleBar.Height += _borderWidth;
-            TitleBar.Padding = new Padding(_borderWidth, 0, _borderWidth, _borderWidth);
+            float scale = dpi / 96f;
+            _borderWidth = Math.Max(1, (int)Math.Round(_logicalBorderWidth * scale));
+            _titleBarHeight = Math.Max(28, (int)Math.Round(_logicalTitleBarHeight * scale));
+            Padding = new Padding(_borderWidth);
         }
 
-        protected override void OnMove(EventArgs e)
-        {
-            MaximizedBounds = new Rectangle(Point.Empty, Screen.GetWorkingArea(Location).Size);
-            base.OnMove(e);
-        }
-
-        private void MainWindow_Load(object sender, EventArgs e)
+        private void MainWindow_Load(object? sender, EventArgs e)
         {
             try
             {
@@ -64,6 +61,9 @@ namespace UltraWideScreenShare.WinForms
                 Trace.WriteLine($"set_window_display_affinity_error: {ex}");
             }
 
+            RestoreWindowPosition();
+            InitializeTitleBarWindow();
+
             if (!StartDesktopDuplication())
             {
                 Close();
@@ -76,6 +76,24 @@ namespace UltraWideScreenShare.WinForms
                 _captureController?.ProcessFrame();
             };
             _dispatcherTimer.Start();
+        }
+
+        private void InitializeTitleBarWindow()
+        {
+            if (_titleBarWindow != null)
+            {
+                return;
+            }
+
+            _titleBarWindow = new TitleBarWindow(this);
+            _titleBarWindow.MinimizeRequested += (_, _) => WindowState = FormWindowState.Minimized;
+            _titleBarWindow.MaximizeRequested += (_, _) => ToggleWindowState();
+            _titleBarWindow.CloseRequested += (_, _) => Close();
+            _titleBarWindow.ApplyScale(_titleBarHeight);
+            _titleBarWindow.UpdateTitle(Text);
+            _titleBarWindow.UpdateMaximizeState(WindowState == FormWindowState.Maximized);
+            _titleBarWindow.Show(this);
+            UpdateTitleBarBounds();
         }
 
         private bool StartDesktopDuplication()
@@ -113,7 +131,7 @@ namespace UltraWideScreenShare.WinForms
         private void UpdateTransparency()
         {
             var cursor = PointToClient(Cursor.Position);
-            bool insideCapture = magnifierPanel.Bounds.Contains(cursor) && !TitleBar.Bounds.Contains(cursor);
+            bool insideCapture = magnifierPanel.Bounds.Contains(cursor);
 
             if (insideCapture && !_isTransparent)
             {
@@ -127,17 +145,61 @@ namespace UltraWideScreenShare.WinForms
             }
         }
 
-        private void MainWindow_ResizeBegin(object sender, EventArgs e) { }
+        private void MainWindow_ResizeBegin(object? sender, EventArgs e) { }
 
-        private void MainWindow_ResizeEnd(object sender, EventArgs e) { }
+        private void MainWindow_ResizeEnd(object? sender, EventArgs e) { }
 
-        private void TittleButton_MouseDown(object sender, MouseEventArgs e)
+        private void ToggleWindowState()
         {
-            if (e.Button == MouseButtons.Left)
+            WindowState = WindowState == FormWindowState.Maximized
+                ? FormWindowState.Normal
+                : FormWindowState.Maximized;
+
+            UpdateTitleBarState();
+        }
+
+        private void UpdateTitleBarState()
+        {
+            if (_titleBarWindow == null)
             {
-                this.Drag();
-                SetupMaximizeButton();
+                return;
             }
+
+            _titleBarWindow.UpdateMaximizeState(WindowState == FormWindowState.Maximized);
+            if (WindowState == FormWindowState.Minimized)
+            {
+                _titleBarWindow.Hide();
+            }
+            else if (!_titleBarWindow.Visible)
+            {
+                _titleBarWindow.Show();
+            }
+
+            UpdateTitleBarBounds();
+        }
+
+        private void UpdateTitleBarBounds()
+        {
+            if (_titleBarWindow == null || WindowState == FormWindowState.Minimized)
+            {
+                return;
+            }
+
+            _titleBarWindow.ApplyScale(_titleBarHeight);
+            _titleBarWindow.UpdateTitle(Text);
+
+            var targetScreen = Screen.FromControl(this).WorkingArea;
+            int x = Location.X;
+            int y = Location.Y - _titleBarWindow.Height;
+            int width = Width;
+
+            if (y < targetScreen.Top)
+            {
+                y = targetScreen.Top;
+            }
+
+            _titleBarWindow.Bounds = new Rectangle(x, y, width, _titleBarWindow.Height);
+            _titleBarWindow.TopMost = TopMost;
         }
 
         private const int WM_NCCALCSIZE = 0x0083;
@@ -163,7 +225,7 @@ namespace UltraWideScreenShare.WinForms
             }
         }
 
-        private void MainWindow_Paint(object sender, PaintEventArgs e)
+        private void MainWindow_Paint(object? sender, PaintEventArgs e)
         {
             ControlPaint.DrawBorder(e.Graphics, ClientRectangle,
                 _frameColor, _borderWidth, ButtonBorderStyle.Solid,
@@ -172,72 +234,139 @@ namespace UltraWideScreenShare.WinForms
                 _frameColor, _borderWidth, ButtonBorderStyle.Solid);
         }
 
-        private void TitleBar_Paint(object sender, PaintEventArgs e)
-        {
-            ControlPaint.DrawBorder(e.Graphics, TitleBar.ClientRectangle,
-                _frameColor, _borderWidth, ButtonBorderStyle.Solid,
-                _frameColor, 0, ButtonBorderStyle.Solid,
-                _frameColor, _borderWidth, ButtonBorderStyle.Solid,
-                _frameColor, _borderWidth, ButtonBorderStyle.Solid);
-        }
-
-        private void closeButton_Click(object sender, EventArgs e) => Close();
-
         protected override void OnClosing(CancelEventArgs e)
         {
+            SaveWindowPosition();
             _dispatcherTimer.Stop();
             _dispatcherTimer.Dispose();
             _captureController?.Dispose();
+            _captureController = null;
+            _savePositionTimer.Stop();
+            _savePositionTimer.Dispose();
+            if (_titleBarWindow != null)
+            {
+                _titleBarWindow.Close();
+                _titleBarWindow = null;
+            }
+
             base.OnClosing(e);
         }
 
-        private void minimizeButton_Click(object sender, EventArgs e) => WindowState = FormWindowState.Minimized;
-
-        private void maximizeButton_Click(object sender, EventArgs e)
+        protected override void OnMove(EventArgs e)
         {
-            WindowState = WindowState == FormWindowState.Maximized
-                ? FormWindowState.Normal
-                : FormWindowState.Maximized;
-            SetupMaximizeButton();
+            base.OnMove(e);
+            MaximizedBounds = new Rectangle(Point.Empty, Screen.GetWorkingArea(Location).Size);
+            UpdateTitleBarBounds();
+            SaveWindowPositionDelayed();
         }
 
-        private void SetupMaximizeButton()
+        protected override void OnResize(EventArgs e)
         {
-            maximizeButton.Image = WindowState == FormWindowState.Maximized
-                ? Properties.Resources.restore
-                : Properties.Resources.maximize;
+            base.OnResize(e);
+            UpdateTitleBarState();
+            SaveWindowPositionDelayed();
         }
 
         protected override void OnDpiChanged(DpiChangedEventArgs e)
         {
             base.OnDpiChanged(e);
-            float scale = e.DeviceDpiNew / 96f;
-            _borderWidth = (int)Math.Round(_logicalBorderWidth * scale);
-            Padding = new Padding(_borderWidth, _borderWidth, _borderWidth, _borderWidth);
-            TitleBar.Padding = new Padding(_borderWidth, 0, _borderWidth, _borderWidth);
+            InitializeScalingDependentMetrics(e.DeviceDpiNew);
             Invalidate();
+            UpdateTitleBarBounds();
         }
 
-        private void DragButton_MouseDown(object sender, MouseEventArgs e)
+        protected override void OnTextChanged(EventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
-            {
-                _tittleBarLocation = e.Location;
-            }
-        }
-
-        private void DragButton_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Left)
-            {
-                TitleBar.Left = Math.Clamp(e.X + TitleBar.Left - _tittleBarLocation.X,
-                    0, Width - TitleBar.Width);
-            }
+            base.OnTextChanged(e);
+            _titleBarWindow?.UpdateTitle(Text);
         }
 
         private Rectangle GetCaptureRegion()
         {
-            return magnifierPanel.RectangleToScreen(magnifierPanel.ClientRectangle);
+            var rect = magnifierPanel.RectangleToScreen(magnifierPanel.ClientRectangle);
+            rect.Inflate(_borderWidth, _borderWidth);
+            return rect;
+        }
+
+        private void SaveWindowPositionDelayed()
+        {
+            if (WindowState != FormWindowState.Normal)
+            {
+                return;
+            }
+
+            _savePositionTimer.Stop();
+            _savePositionTimer.Start();
+        }
+
+        private void SavePositionTimer_Tick(object? sender, EventArgs e)
+        {
+            SaveWindowPosition();
+            _savePositionTimer.Stop();
+        }
+
+        private void SaveWindowPosition()
+        {
+            if (WindowState != FormWindowState.Normal)
+            {
+                var bounds = RestoreBounds;
+                var settingsMaximized = Properties.Settings.Default;
+                settingsMaximized.WindowLocation = bounds.Location;
+                settingsMaximized.WindowSize = bounds.Size;
+                settingsMaximized.IsMaximized = WindowState == FormWindowState.Maximized;
+                settingsMaximized.FirstRun = false;
+                settingsMaximized.Save();
+                return;
+            }
+
+            var settings = Properties.Settings.Default;
+            settings.WindowLocation = Location;
+            settings.WindowSize = Size;
+            settings.IsMaximized = false;
+            settings.FirstRun = false;
+            settings.Save();
+        }
+
+        private void RestoreWindowPosition()
+        {
+            var settings = Properties.Settings.Default;
+
+            if (settings.FirstRun)
+            {
+                CenterWindowOnPrimaryScreen();
+                return;
+            }
+
+            var savedLocation = settings.WindowLocation;
+            var savedSize = settings.WindowSize;
+
+            var savedBounds = new Rectangle(savedLocation, savedSize);
+            bool intersectsScreen = Screen.AllScreens.Any(s => s.WorkingArea.IntersectsWith(savedBounds));
+
+            if (intersectsScreen)
+            {
+                StartPosition = FormStartPosition.Manual;
+                Location = savedLocation;
+                Size = savedSize;
+
+                if (settings.IsMaximized)
+                {
+                    WindowState = FormWindowState.Maximized;
+                }
+            }
+            else
+            {
+                CenterWindowOnPrimaryScreen();
+            }
+        }
+
+        private void CenterWindowOnPrimaryScreen()
+        {
+            var screen = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1920, 1080);
+            StartPosition = FormStartPosition.Manual;
+            Location = new Point(
+                screen.Left + (screen.Width - Width) / 2,
+                screen.Top + (screen.Height - Height) / 2);
         }
     }
 
