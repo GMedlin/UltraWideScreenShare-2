@@ -40,7 +40,7 @@ namespace UltraWideScreenShare.WinForms
             rootPanel.Margin = new Padding(0);
             rootPanel.Name = "rootPanel";
             rootPanel.Padding = new Padding(12, 0, 12, 0);
-            rootPanel.Size = new Size(600, 44);
+            rootPanel.Size = new Size(600, 32);
             rootPanel.TabIndex = 0;
             rootPanel.MouseDown += Root_MouseDown;
             rootPanel.DoubleClick += Root_DoubleClick;
@@ -67,7 +67,8 @@ namespace UltraWideScreenShare.WinForms
             // buttonStrip
             //
             buttonStrip.AutoSize = false;
-            buttonStrip.Dock = DockStyle.Right;
+            buttonStrip.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            buttonStrip.Dock = DockStyle.None;
             buttonStrip.FlowDirection = FlowDirection.RightToLeft;
             buttonStrip.Location = new Point(456, 0);
             buttonStrip.Margin = new Padding(0);
@@ -119,7 +120,7 @@ namespace UltraWideScreenShare.WinForms
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.None;
             BackColor = Color.White;
-            ClientSize = new Size(600, 44);
+            ClientSize = new Size(600, 32);
             ControlBox = false;
             buttonStrip.Controls.Add(closeButton);
             buttonStrip.Controls.Add(maximizeButton);
