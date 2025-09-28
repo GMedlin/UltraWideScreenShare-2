@@ -35,6 +35,10 @@ jobs:
       with:
         dotnet-version: 9.0.x
 
+    # Add MSBuild to the PATH (required for Single-Project MSIX)
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
     # Create test certificate for MSIX signing
     - name: Create test certificate
       run: |
@@ -56,25 +60,28 @@ jobs:
       env:
         Configuration: ${{ matrix.configuration }}
 
-    # Build MSIX package
+    # Build MSIX package using MSBuild (required for Single-Project MSIX)
     - name: Build MSIX package
       shell: pwsh
       run: |
         $msixOut = "${{ github.workspace }}\artifacts\msix\${{ matrix.rid }}"
         New-Item -ItemType Directory -Force -Path $msixOut | Out-Null
 
-        dotnet publish $env:Project_Path `
-          -c $env:Configuration `
-          -r ${{ matrix.rid }} `
-          -p:WindowsPackageType=MSIX `
-          -p:GenerateAppxPackageOnBuild=true `
-          -p:AppxBundle=Never `
-          -p:AppxPackageDir="$msixOut\" `
-          -p:AppxPackageSigningEnabled=true `
-          -p:PackageCertificateKeyFile="${{ github.workspace }}\UltraWideScreenShare2-Test.pfx" `
-          -p:PackageCertificatePassword="test123" `
-          -p:Platform=${{ matrix.rid == 'win-x64' && 'x64' || 'x86' }} `
-          --no-restore
+        # Use MSBuild for Single-Project MSIX packaging
+        msbuild $env:Project_Path `
+          /t:Publish `
+          /p:Configuration=$env:Configuration `
+          /p:RuntimeIdentifier=${{ matrix.rid }} `
+          /p:Platform=${{ matrix.rid == 'win-x64' && 'x64' || 'x86' }} `
+          /p:WindowsPackageType=MSIX `
+          /p:GenerateAppxPackageOnBuild=true `
+          /p:AppxBundle=Never `
+          /p:AppxPackageDir="$msixOut\" `
+          /p:UapAppxPackageBuildMode=SideloadOnly `
+          /p:AppxPackageSigningEnabled=true `
+          /p:PackageCertificateKeyFile="${{ github.workspace }}\UltraWideScreenShare2-Test.pfx" `
+          /p:PackageCertificatePassword="test123" `
+          /restore:false
 
         Write-Host "MSIX output directory: $msixOut"
         Get-ChildItem -Path $msixOut -Recurse -Filter "*.msix" | ForEach-Object { Write-Host "Found package: $($_.FullName)" }
