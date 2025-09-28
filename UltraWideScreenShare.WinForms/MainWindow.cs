@@ -20,14 +20,15 @@ namespace UltraWideScreenShare.WinForms
         private TitleBarWindow? _titleBarWindow;
         private bool _isTransparent;
         private Color _frameColor = Color.FromArgb(255, 255, 221, 0);
-        private const int _logicalBorderWidth = 6;
+        private const int _logicalBorderWidth = 2;
         private const int _logicalTitleBarHeight = 44;
-        private int _borderWidth = 6;
+        private int _borderWidth = 2;
         private int _titleBarHeight = _logicalTitleBarHeight;
 
         public MainWindow()
         {
             InitializeComponent();
+            Shown += MainWindow_Shown;
             InitializeScalingDependentMetrics(DeviceDpi);
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
             _savePositionTimer.Tick += SavePositionTimer_Tick;
@@ -62,7 +63,6 @@ namespace UltraWideScreenShare.WinForms
             }
 
             RestoreWindowPosition();
-            InitializeTitleBarWindow();
 
             if (!StartDesktopDuplication())
             {
@@ -76,6 +76,11 @@ namespace UltraWideScreenShare.WinForms
                 _captureController?.ProcessFrame();
             };
             _dispatcherTimer.Start();
+        }
+
+        private void MainWindow_Shown(object? sender, EventArgs e)
+        {
+            InitializeTitleBarWindow();
         }
 
         private void InitializeTitleBarWindow()
@@ -353,6 +358,16 @@ namespace UltraWideScreenShare.WinForms
                 {
                     WindowState = FormWindowState.Maximized;
                 }
+                else
+                {
+                    // Ensure there is room for the detached title bar above the main window
+                    var wa = Screen.FromPoint(Location).WorkingArea;
+                    int requiredTop = wa.Top + _titleBarHeight;
+                    if (Location.Y < requiredTop)
+                    {
+                        Location = new Point(Location.X, requiredTop);
+                    }
+                }
             }
             else
             {
@@ -364,9 +379,15 @@ namespace UltraWideScreenShare.WinForms
         {
             var screen = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1920, 1080);
             StartPosition = FormStartPosition.Manual;
+
+            // Ensure there is room for the detached title bar above the main window
+            int centeredY = screen.Top + (screen.Height - Height) / 2;
+            int requiredTop = screen.Top + _titleBarHeight;
+            int finalY = Math.Max(centeredY, requiredTop);
+
             Location = new Point(
                 screen.Left + (screen.Width - Width) / 2,
-                screen.Top + (screen.Height - Height) / 2);
+                finalY);
         }
     }
 
