@@ -79,15 +79,6 @@ namespace UltraWideScreenShare.WinForms
             maximizeButton.AccessibleName = isMaximized ? "Restore" : "Maximize";
         }
 
-        protected override void OnHandleCreated(EventArgs e)
-        {
-            base.OnHandleCreated(e);
-
-            // Prevent auto-sizing from inflating height
-            this.AutoSize = false;
-            this.MaximumSize = new Size(int.MaxValue, 32);
-        }
-
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
