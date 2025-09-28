@@ -22,9 +22,7 @@ jobs:
     env:
       Solution_Name: UltraWideScreenShare2.sln
       Project_Path: UltraWideScreenShare.WinForms\UltraWideScreenShare.WinForms.csproj
-      Project_Dir: UltraWideScreenShare.WinForms
-      Package_Project_Path: UltraWideScreenShare.Package\UltraWideScreenShare.Package.wapproj
-      Package_Project_Dir: UltraWideScreenShare.Package 
+      Project_Dir: UltraWideScreenShare.WinForms 
 
     steps:
     - name: Checkout
@@ -63,10 +61,10 @@ jobs:
       env:
         Configuration: ${{ matrix.configuration }}
 
-    # Build MSIX package
+    # Build MSIX package using single-project MSIX
     - name: Build MSIX package
       run: |
-        msbuild $env:Package_Project_Path /p:Configuration=$env:Configuration /p:Platform=${{ matrix.rid == 'win-x64' && 'x64' || 'x86' }} /p:PackageCertificateKeyFile="UltraWideScreenShare2-Test.pfx" /p:PackageCertificatePassword="test123" /p:AppxPackageSigningEnabled=true
+        msbuild $env:Project_Path /p:Configuration=$env:Configuration /p:Platform=${{ matrix.rid == 'win-x64' && 'x64' || 'x86' }} /p:PackageCertificateKeyFile="UltraWideScreenShare2-Test.pfx" /p:PackageCertificatePassword="test123" /p:AppxPackageSigningEnabled=true /p:GenerateAppxPackageOnBuild=true
       env:
         Configuration: ${{ matrix.configuration }}
 
@@ -83,7 +81,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: UltraWideScreenShare2-MSIX-${{ matrix.rid }}
-        path: ${{ env.Package_Project_Dir }}\AppPackages\**\*.msix
+        path: ${{ env.Project_Dir }}\AppPackages\**\*.msix
         compression-level: 1
 
     - name: Create portable app zip
@@ -93,7 +91,7 @@ jobs:
     - name: Create MSIX bundle zip
       shell: pwsh
       run: |
-        $msixPath = "${{ env.Package_Project_Dir }}\AppPackages"
+        $msixPath = "${{ env.Project_Dir }}\AppPackages"
         if (Test-Path $msixPath) {
           $msixFiles = Get-ChildItem -Path $msixPath -Recurse -Filter "*.msix"
           if ($msixFiles) {
