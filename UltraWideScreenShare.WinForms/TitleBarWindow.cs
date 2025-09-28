@@ -45,7 +45,7 @@ namespace UltraWideScreenShare.WinForms
             }
 
             _currentHeight = targetHeight;
-            Height = targetHeight;
+            ClientSize = new Size(ClientSize.Width, targetHeight);
 
             int buttonWidth = 46;
             int buttonHeight = targetHeight;
@@ -56,10 +56,12 @@ namespace UltraWideScreenShare.WinForms
                 button.Margin = new Padding(0);
             }
 
-            buttonStrip.Height = targetHeight;
             rootPanel.Padding = new Padding(12, 0, 0, 0);
             buttonStrip.Padding = new Padding(0);
             titleLabel.Padding = new Padding(4, 0, 0, 0);
+
+            rootPanel.PerformLayout();
+            buttonStrip.PerformLayout();
         }
 
         public void UpdateTitle(string title)
