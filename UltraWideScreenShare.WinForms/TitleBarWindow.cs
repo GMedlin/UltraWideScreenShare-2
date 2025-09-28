@@ -47,16 +47,17 @@ namespace UltraWideScreenShare.WinForms
             _currentHeight = targetHeight;
             Height = targetHeight;
 
-            int buttonSide = Math.Max(24, targetHeight - 12);
-            int verticalMargin = Math.Max(0, (targetHeight - buttonSide) / 2);
+            int buttonWidth = 46;
+            int buttonHeight = targetHeight;
 
             foreach (var button in new[] { minimizeButton, maximizeButton, closeButton })
             {
-                button.Size = new Size(buttonSide, buttonSide);
-                button.Margin = new Padding(0, verticalMargin, 0, verticalMargin);
+                button.Size = new Size(buttonWidth, buttonHeight);
+                button.Margin = new Padding(0);
             }
 
-            rootPanel.Padding = new Padding(12, 0, 12, 0);
+            buttonStrip.Height = targetHeight;
+            rootPanel.Padding = new Padding(12, 0, 0, 0);
             buttonStrip.Padding = new Padding(0);
             titleLabel.Padding = new Padding(4, 0, 0, 0);
         }

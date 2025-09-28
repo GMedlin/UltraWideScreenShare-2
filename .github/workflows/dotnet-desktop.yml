@@ -64,6 +64,7 @@ jobs:
     # Build MSIX package using Windows Application Packaging Project (.wapproj)
     - name: Build MSIX package
       shell: pwsh
+      timeout-minutes: 15
       run: |
         $msixOut = "${{ github.workspace }}\artifacts\msix\${{ matrix.rid }}"
         New-Item -ItemType Directory -Force -Path $msixOut | Out-Null
@@ -82,12 +83,27 @@ jobs:
           /p:AppxPackageDir="$msixOut\" `
           /p:AppxPackageSigningEnabled=true `
           /p:PackageCertificateKeyFile="${{ github.workspace }}\UltraWideScreenShare2-Test.pfx" `
-          /p:PackageCertificatePassword="test123"
+          /p:PackageCertificatePassword="test123" `
+          /p:UseSharedCompilation=false `
+          /nr:false `
+          /m `
+          /v:m `
+          /clp:Summary `
+          /bl:"${{ github.workspace }}\msbuild-${{ matrix.rid }}.binlog"
 
         Write-Host "MSIX output directory: $msixOut"
         Get-ChildItem -Path $msixOut -Recurse -Filter "*.msix" | ForEach-Object { Write-Host "Found package: $($_.FullName)" }
       env:
         Configuration: ${{ matrix.configuration }}
+
+    # Upload build log for debugging (even on failure)
+    - name: Upload MSBuild log
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: msbuild-log-${{ matrix.rid }}
+        path: msbuild-${{ matrix.rid }}.binlog
+        retention-days: 5
 
     # Upload portable app artifacts
     - name: Upload build artifacts

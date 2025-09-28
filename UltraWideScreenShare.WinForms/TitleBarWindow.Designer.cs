@@ -66,15 +66,14 @@ namespace UltraWideScreenShare.WinForms
             //
             // buttonStrip
             //
-            buttonStrip.AutoSize = true;
-            buttonStrip.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            buttonStrip.AutoSize = false;
             buttonStrip.Dock = DockStyle.Right;
             buttonStrip.FlowDirection = FlowDirection.RightToLeft;
             buttonStrip.Location = new Point(456, 0);
             buttonStrip.Margin = new Padding(0);
             buttonStrip.Name = "buttonStrip";
             buttonStrip.Padding = new Padding(0);
-            buttonStrip.Size = new Size(132, 44);
+            buttonStrip.Size = new Size(138, 32);
             buttonStrip.TabIndex = 2;
             buttonStrip.WrapContents = false;
 
@@ -83,7 +82,7 @@ namespace UltraWideScreenShare.WinForms
             //
             minimizeButton.FlatStyle = FlatStyle.Flat;
             minimizeButton.Location = new Point(80, 6);
-            minimizeButton.Margin = new Padding(0, 6, 0, 6);
+            minimizeButton.Margin = new Padding(0);
             minimizeButton.Name = "minimizeButton";
             minimizeButton.Size = new Size(52, 32);
             minimizeButton.TabIndex = 2;
@@ -95,7 +94,7 @@ namespace UltraWideScreenShare.WinForms
             //
             maximizeButton.FlatStyle = FlatStyle.Flat;
             maximizeButton.Location = new Point(28, 6);
-            maximizeButton.Margin = new Padding(0, 6, 0, 6);
+            maximizeButton.Margin = new Padding(0);
             maximizeButton.Name = "maximizeButton";
             maximizeButton.Size = new Size(52, 32);
             maximizeButton.TabIndex = 1;
@@ -107,7 +106,7 @@ namespace UltraWideScreenShare.WinForms
             //
             closeButton.FlatStyle = FlatStyle.Flat;
             closeButton.Location = new Point(0, 6);
-            closeButton.Margin = new Padding(0, 6, 0, 6);
+            closeButton.Margin = new Padding(0);
             closeButton.Name = "closeButton";
             closeButton.Size = new Size(28, 32);
             closeButton.TabIndex = 0;
