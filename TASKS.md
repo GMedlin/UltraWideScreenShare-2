@@ -1,54 +1,56 @@
 # UltraWideScreenShare-2 Task Priority List
 
-## Current Sprint: Core Functionality Fixes
+## 🚀 New Priority: Cursor Visibility in Screen Captures
 
-### 🔴 High Priority (Core Issues)
+### Problem Description
+Mouse cursor is not visible in OBS captures or screen sharing tools when other windows are focused. This is a core limitation of Desktop Duplication API.
 
-- [ ] **Issue #2: DPI-awareness + border math bug**
-  - Status: Ready for Claude
-  - Description: Content cropping at non-100% DPI scaling
-  - Impact: Core functionality broken on scaled displays
-  - Action: Comment `@claude` on issue #2
+### Issues Experienced
+1. **Desktop Duplication API Limitation**: API never includes cursor in captured frames - cursor is hardware overlay
+2. **Complex Manual Compositing**: Attempted cursor rendering resulted in:
+   - Odd-looking boxes instead of proper cursor
+   - Pink triangles when using alpha blending
+   - Complex data format interpretation (BGRA, pitch, hotspot calculations)
+   - Performance overhead with CPU-based pixel manipulation
 
-- [ ] **Issue #4: Move title bar above share region**
-  - Status: Ready for Claude
-  - Description: Title bar overlaps with shared content area
-  - Impact: Professional appearance for screen sharing
-  - Action: Comment `@claude` on issue #4
+### Approaches Tried
+1. **Manual Cursor Compositing** ❌
+   - Captured cursor data from `GetFramePointerShape`
+   - Attempted CPU-based alpha blending
+   - Result: Visual artifacts, incorrect rendering
 
-### 🟡 Medium Priority (Quality of Life)
+2. **Windows Graphics Capture API Migration** ❌ (Incomplete)
+   - Modern API with `IsCursorCaptureEnabled = true` property
+   - Result: Complex migration, build errors, interop complexity
 
-- [ ] **Issue #3: Remember window position and size**
-  - Status: Ready for Claude
-  - Description: Save/restore window bounds between sessions
-  - Impact: User convenience
-  - Action: Comment `@claude` on issue #3
+### Recommended Next Approach
+**Use a proven screen capture library that handles cursor automatically:**
 
-### 🟢 Low Priority (Infrastructure)
+- **ScreenCapture.NET**: Modern .NET library with built-in cursor support
+- **FFMpegCore with screen capture**: Handles cursor compositing natively
+- **Windows.Graphics.Capture wrapper libraries**: Pre-built solutions for cursor handling
 
-- [ ] **Issue #5: Modernize to .NET 8**
-  - Status: Ready for Claude
-  - Description: Update from .NET 6 to .NET 8 for better support
-  - Impact: Future maintenance and security
-  - Action: Comment `@claude` on issue #5
+### Future Implementation Prompt
+```
+"I need to add mouse cursor visibility to screen captures in my .NET 9 Windows Forms application. Currently using Desktop Duplication API but cursor isn't visible in OBS/screen sharing tools.
 
-## Setup Completed ✅
+Requirements:
+- Show cursor in all capture scenarios (OBS, Teams, etc.)
+- Maintain current crisp display quality (using DXGI Scaling.None)
+- Keep existing architecture if possible
+- Must work when other windows are focused
 
-- [x] Claude Code GitHub Action configured with OAuth token
-- [x] CI/CD build workflow for automatic builds
-- [x] .gitignore updated for Claude Code local settings
-- [x] Issues created with detailed implementation plans
+Current setup:
+- .NET 9 Windows Forms app
+- Desktop Duplication API with DirectX 11
+- Vortice.Direct3D11 and Vortice.DXGI packages
+- Custom transparency handling with TransparencyKey
+
+Please recommend and implement the simplest, most reliable solution - whether that's using a proven library, migrating to Windows Graphics Capture API with proper interop, or another approach."
+```
 
 ## Development Workflow
 
-1. **Test Changes**: Comment `@claude` on GitHub issues
-2. **Local Build**: `dotnet build UltraWideScreenShare.WinForms`
-3. **Local Run**: `dotnet run --project UltraWideScreenShare.WinForms` (requires .NET 6 runtime)
-4. **CI/CD**: Automatic builds on push/PR create downloadable artifacts
-
-## Notes
-
-- Start with Issue #2 (DPI bug) as it affects core functionality
-- Install .NET 6 runtime locally for testing: https://dotnet.microsoft.com/en-us/download/dotnet/6.0
-- Modernization (Issue #5) should be done last to avoid complications
-- All issues have detailed implementation guidance for Claude
+1. **Local Build**: `dotnet build UltraWideScreenShare.WinForms`
+2. **Local Run**: `dotnet run --project UltraWideScreenShare.WinForms` (requires .NET 9 runtime)
+3. **CI/CD**: Automatic builds on push/PR create downloadable artifacts
