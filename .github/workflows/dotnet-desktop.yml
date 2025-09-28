@@ -22,7 +22,6 @@ jobs:
       Solution_Name: UltraWideScreenShare2.sln
       Project_Path: UltraWideScreenShare.WinForms\UltraWideScreenShare.WinForms.csproj
       Project_Dir: UltraWideScreenShare.WinForms
-      Wap_Project_Path: UltraWideScreenShare.Package\UltraWideScreenShare.Package.wapproj
 
     steps:
     - name: Checkout
@@ -36,18 +35,7 @@ jobs:
       with:
         dotnet-version: 9.0.x
 
-    # Add MSBuild to the PATH (required for Single-Project MSIX)
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
 
-    # Create test certificate for MSIX signing
-    - name: Create test certificate
-      run: |
-        $cert = New-SelfSignedCertificate -Subject "CN=UltraWideScreenShare2-Test" -Type CodeSigningCert -CertStoreLocation "Cert:\CurrentUser\My" -HashAlgorithm SHA256
-        $securePassword = ConvertTo-SecureString -String "test123" -Force -AsPlainText
-        Export-PfxCertificate -Cert $cert -FilePath "${{ github.workspace }}\UltraWideScreenShare2-Test.pfx" -Password $securePassword
-        Write-Host "Certificate created with thumbprint: $($cert.Thumbprint)"
-      shell: pwsh
 
     # Restore the application
     - name: Restore the application
@@ -61,49 +49,7 @@ jobs:
       env:
         Configuration: ${{ matrix.configuration }}
 
-    # Build MSIX package using Windows Application Packaging Project (.wapproj)
-    - name: Build MSIX package
-      shell: pwsh
-      timeout-minutes: 15
-      run: |
-        $msixOut = "${{ github.workspace }}\artifacts\msix\${{ matrix.rid }}"
-        New-Item -ItemType Directory -Force -Path $msixOut | Out-Null
 
-        # Map matrix rid to MSBuild Platform for .wapproj
-        $platform = if ("${{ matrix.rid }}" -eq "win-x64") { "x64" } else { "x86" }
-
-        # Build the Windows Application Packaging Project (.wapproj)
-        msbuild $env:Wap_Project_Path `
-          /t:Build `
-          /p:Configuration=$env:Configuration `
-          /p:Platform=$platform `
-          /p:GenerateAppxPackageOnBuild=true `
-          /p:UapAppxPackageBuildMode=SideloadOnly `
-          /p:AppxBundle=Never `
-          /p:AppxPackageDir="$msixOut\" `
-          /p:AppxPackageSigningEnabled=true `
-          /p:PackageCertificateKeyFile="${{ github.workspace }}\UltraWideScreenShare2-Test.pfx" `
-          /p:PackageCertificatePassword="test123" `
-          /p:UseSharedCompilation=false `
-          /nr:false `
-          /m `
-          /v:m `
-          /clp:Summary `
-          /bl:"${{ github.workspace }}\msbuild-${{ matrix.rid }}.binlog"
-
-        Write-Host "MSIX output directory: $msixOut"
-        Get-ChildItem -Path $msixOut -Recurse -Filter "*.msix" | ForEach-Object { Write-Host "Found package: $($_.FullName)" }
-      env:
-        Configuration: ${{ matrix.configuration }}
-
-    # Upload build log for debugging (even on failure)
-    - name: Upload MSBuild log
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: msbuild-log-${{ matrix.rid }}
-        path: msbuild-${{ matrix.rid }}.binlog
-        retention-days: 5
 
     # Upload portable app artifacts
     - name: Upload build artifacts
@@ -113,13 +59,6 @@ jobs:
         path: ${{ env.Project_Dir }}\bin\${{ matrix.configuration }}\net9.0-windows*\${{ matrix.rid }}\publish\
         compression-level: 1
 
-    # Upload MSIX package artifacts
-    - name: Upload MSIX artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: UltraWideScreenShare2-msix-${{ matrix.rid }}
-        path: artifacts/msix/${{ matrix.rid }}/**/*.msix
-        compression-level: 1
 
     - name: Create portable app zip
       shell: pwsh
@@ -132,20 +71,6 @@ jobs:
           Write-Error "Could not find publish directory"
         }
 
-    - name: Create MSIX zip
-      shell: pwsh
-      run: |
-        $msixFiles = Get-ChildItem -Path "artifacts\msix\${{ matrix.rid }}" -Recurse -Filter "*.msix" -ErrorAction SilentlyContinue
-        if ($msixFiles -and $msixFiles.Count -gt 0) {
-          Write-Host "Found $($msixFiles.Count) MSIX files"
-          $msixFiles | ForEach-Object { Write-Host "MSIX file: $($_.FullName)" }
-          Compress-Archive -Path $msixFiles[0].FullName -Destination UltraWideScreenShare2-MSIX-${{ matrix.rid }}.zip
-          Write-Host "Created UltraWideScreenShare2-MSIX-${{ matrix.rid }}.zip"
-        } else {
-          Write-Host "No MSIX files found for packaging"
-          # Create placeholder to avoid release failure
-          "No MSIX package generated" | Out-File -FilePath "UltraWideScreenShare2-MSIX-${{ matrix.rid }}.txt"
-        }
 
     - name: Release
       uses: softprops/action-gh-release@v1
@@ -153,5 +78,3 @@ jobs:
       with:
         files: |
           UltraWideScreenShare2-${{ matrix.rid }}.zip
-          UltraWideScreenShare2-MSIX-${{ matrix.rid }}.zip
-          UltraWideScreenShare2-MSIX-${{ matrix.rid }}.txt
