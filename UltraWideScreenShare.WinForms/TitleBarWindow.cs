@@ -221,7 +221,9 @@ namespace UltraWideScreenShare.WinForms
             // Scale for current DPI
             float scale = dpi / 96.0f;
             int captionHeight = (int)Math.Round(baseCaptionHeight * scale);
-            int buttonWidth = (int)Math.Round(baseButtonWidth * scale);
+
+            // Windows standard: title bar buttons are approximately 1.5x SM_CXSIZE for proper appearance
+            int buttonWidth = (int)Math.Round(baseButtonWidth * 1.5f * scale);
             int buttonHeight = (int)Math.Round(baseButtonHeight * scale);
 
             return (captionHeight, buttonWidth, buttonHeight);
