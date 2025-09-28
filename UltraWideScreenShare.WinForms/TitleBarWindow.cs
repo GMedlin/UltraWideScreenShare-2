@@ -79,6 +79,29 @@ namespace UltraWideScreenShare.WinForms
             maximizeButton.AccessibleName = isMaximized ? "Restore" : "Maximize";
         }
 
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+
+            // Disable all auto-sizing to prevent height inflation
+            this.AutoSize = false;
+            this.MinimumSize = new Size(0, 0);
+            this.MaximumSize = new Size(int.MaxValue, 32);
+            this.Padding = new Padding(0);
+
+            rootPanel.AutoSize = false;
+            rootPanel.Padding = new Padding(12, 0, 0, 0);
+            rootPanel.Margin = new Padding(0);
+
+            buttonStrip.AutoSize = false;
+            buttonStrip.WrapContents = false;
+            buttonStrip.Padding = new Padding(0);
+            buttonStrip.Margin = new Padding(0);
+
+            // Ensure exact height
+            ApplyScale(32);
+        }
+
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
