@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -41,9 +42,8 @@ namespace UltraWideScreenShare.WinForms
         {
             // Use system metrics for proper scaling
             int dpi = DeviceDpi;
-            int btnWidth = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CXSIZE, (uint)dpi);
-            int btnHeight = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CYSIZE, (uint)dpi);
-            ApplyScaleWithMetrics(targetHeight, btnWidth, btnHeight);
+            var metrics = TitleBarMetrics.GetForDpi(dpi);
+            ApplyScaleWithMetrics(targetHeight, metrics.ButtonWidth, metrics.ButtonHeight);
         }
 
         public void ApplyScaleWithMetrics(int targetHeight, int buttonWidth, int buttonHeight)
@@ -92,10 +92,8 @@ namespace UltraWideScreenShare.WinForms
 
             // Calculate caption metrics from Windows system for current DPI
             int dpi = DeviceDpi;
-            int capHeight = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CYCAPTION, (uint)dpi);
-            int btnWidth = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CXSIZE, (uint)dpi);
-            int btnHeight = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CYSIZE, (uint)dpi);
-            int targetHeight = capHeight;
+            var metrics = TitleBarMetrics.GetForDpi(dpi);
+            int targetHeight = metrics.CaptionHeight;
 
             // Use system caption font for proper alignment
             this.Font = SystemFonts.CaptionFont;
@@ -117,7 +115,7 @@ namespace UltraWideScreenShare.WinForms
             buttonStrip.Margin = new Padding(0);
 
             // Ensure exact system-metric height
-            ApplyScaleWithMetrics(targetHeight, btnWidth, btnHeight);
+            ApplyScaleWithMetrics(targetHeight, metrics.ButtonWidth, metrics.ButtonHeight);
         }
 
         protected override void OnShown(EventArgs e)
@@ -187,22 +185,46 @@ namespace UltraWideScreenShare.WinForms
             {
                 // LOWORD = X dpi, HIWORD = Y dpi (typically equal)
                 int newDpi = (int)(m.WParam.ToInt64() & 0xFFFF);
-                int capHeight = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CYCAPTION, (uint)newDpi);
-                int btnWidth = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CXSIZE, (uint)newDpi);
-                int btnHeight = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CYSIZE, (uint)newDpi);
+                var metrics = TitleBarMetrics.GetForDpi(newDpi);
 
                 // Update fonts for new DPI
                 this.Font = SystemFonts.CaptionFont;
                 titleLabel.Font = SystemFonts.CaptionFont;
 
                 // Update height constraints
-                this.MinimumSize = new Size(0, capHeight);
-                this.MaximumSize = new Size(int.MaxValue, capHeight);
+                this.MinimumSize = new Size(0, metrics.CaptionHeight);
+                this.MaximumSize = new Size(int.MaxValue, metrics.CaptionHeight);
 
-                ApplyScaleWithMetrics(capHeight, btnWidth, btnHeight);
+                ApplyScaleWithMetrics(metrics.CaptionHeight, metrics.ButtonWidth, metrics.ButtonHeight);
                 return;
             }
             base.WndProc(ref m);
+        }
+    }
+
+    internal static class TitleBarMetrics
+    {
+        [DllImport("user32.dll")]
+        private static extern int GetSystemMetrics(int nIndex);
+
+        private const int SM_CYCAPTION = 4;  // Height of caption area
+        private const int SM_CXSIZE = 30;    // Width of caption button
+        private const int SM_CYSIZE = 31;    // Height of caption button
+
+        public static (int CaptionHeight, int ButtonWidth, int ButtonHeight) GetForDpi(int dpi)
+        {
+            // Get base system metrics at 96 DPI
+            int baseCaptionHeight = GetSystemMetrics(SM_CYCAPTION);
+            int baseButtonWidth = GetSystemMetrics(SM_CXSIZE);
+            int baseButtonHeight = GetSystemMetrics(SM_CYSIZE);
+
+            // Scale for current DPI
+            float scale = dpi / 96.0f;
+            int captionHeight = (int)Math.Round(baseCaptionHeight * scale);
+            int buttonWidth = (int)Math.Round(baseButtonWidth * scale);
+            int buttonHeight = (int)Math.Round(baseButtonHeight * scale);
+
+            return (captionHeight, buttonWidth, buttonHeight);
         }
     }
 }
