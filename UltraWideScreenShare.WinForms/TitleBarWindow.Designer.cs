@@ -67,8 +67,7 @@ namespace UltraWideScreenShare.WinForms
             // buttonStrip
             //
             buttonStrip.AutoSize = false;
-            buttonStrip.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            buttonStrip.Dock = DockStyle.None;
+            buttonStrip.Dock = DockStyle.Right;
             buttonStrip.FlowDirection = FlowDirection.RightToLeft;
             buttonStrip.Location = new Point(456, 0);
             buttonStrip.Margin = new Padding(0);
