@@ -21,7 +21,7 @@ namespace UltraWideScreenShare.WinForms
         private bool _isTransparent;
         private Color _frameColor = Color.FromArgb(255, 255, 221, 0);
         private const int _logicalBorderWidth = 2;
-        private const int _logicalTitleBarHeight = 44;
+        private const int _logicalTitleBarHeight = 32;
         private int _borderWidth = 2;
         private int _titleBarHeight = _logicalTitleBarHeight;
 
@@ -44,7 +44,7 @@ namespace UltraWideScreenShare.WinForms
         {
             float scale = dpi / 96f;
             _borderWidth = Math.Max(1, (int)Math.Round(_logicalBorderWidth * scale));
-            _titleBarHeight = Math.Max(28, (int)Math.Round(_logicalTitleBarHeight * scale));
+            _titleBarHeight = (int)Math.Round(_logicalTitleBarHeight * scale);
             Padding = new Padding(_borderWidth);
         }
 

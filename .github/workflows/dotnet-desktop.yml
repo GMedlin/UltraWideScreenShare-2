@@ -35,6 +35,8 @@ jobs:
       with:
         dotnet-version: 9.0.x
 
+
+
     # Restore the application
     - name: Restore the application
       run: dotnet restore $env:Solution_Name
@@ -43,9 +45,11 @@ jobs:
 
     # Build app (portable)
     - name: Build the application (portable)
-      run: dotnet publish $env:Project_Path -c $env:Configuration -p:PublishReadyToRun=true -p:PublishSingleFile=true --self-contained true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -r ${{ matrix.rid }}
+      run: dotnet publish $env:Project_Path -c $env:Configuration -p:WindowsPackageType=None -p:PublishReadyToRun=true -p:PublishSingleFile=true --self-contained true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -r ${{ matrix.rid }}
       env:
         Configuration: ${{ matrix.configuration }}
+
+
 
     # Upload portable app artifacts
     - name: Upload build artifacts
@@ -54,6 +58,7 @@ jobs:
         name: UltraWideScreenShare2-${{ matrix.rid }}
         path: ${{ env.Project_Dir }}\bin\${{ matrix.configuration }}\net9.0-windows*\${{ matrix.rid }}\publish\
         compression-level: 1
+
 
     - name: Create portable app zip
       shell: pwsh
@@ -66,8 +71,10 @@ jobs:
           Write-Error "Could not find publish directory"
         }
 
+
     - name: Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: UltraWideScreenShare2-${{ matrix.rid }}.zip
+        files: |
+          UltraWideScreenShare2-${{ matrix.rid }}.zip

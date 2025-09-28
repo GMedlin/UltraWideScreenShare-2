@@ -40,7 +40,7 @@ namespace UltraWideScreenShare.WinForms
             rootPanel.Margin = new Padding(0);
             rootPanel.Name = "rootPanel";
             rootPanel.Padding = new Padding(12, 0, 12, 0);
-            rootPanel.Size = new Size(600, 44);
+            rootPanel.Size = new Size(600, 32);
             rootPanel.TabIndex = 0;
             rootPanel.MouseDown += Root_MouseDown;
             rootPanel.DoubleClick += Root_DoubleClick;
@@ -56,7 +56,7 @@ namespace UltraWideScreenShare.WinForms
             titleLabel.Margin = new Padding(0);
             titleLabel.Name = "titleLabel";
             titleLabel.Padding = new Padding(4, 0, 0, 0);
-            titleLabel.Size = new Size(444, 44);
+            titleLabel.Size = new Size(483, 32);
             titleLabel.TabIndex = 1;
             titleLabel.Text = "Ultra Wide Screen Share";
             titleLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -66,15 +66,14 @@ namespace UltraWideScreenShare.WinForms
             //
             // buttonStrip
             //
-            buttonStrip.AutoSize = true;
-            buttonStrip.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            buttonStrip.AutoSize = false;
             buttonStrip.Dock = DockStyle.Right;
             buttonStrip.FlowDirection = FlowDirection.RightToLeft;
-            buttonStrip.Location = new Point(456, 0);
+            buttonStrip.Location = new Point(495, 0);
             buttonStrip.Margin = new Padding(0);
             buttonStrip.Name = "buttonStrip";
             buttonStrip.Padding = new Padding(0);
-            buttonStrip.Size = new Size(132, 44);
+            buttonStrip.Size = new Size(115, 32);
             buttonStrip.TabIndex = 2;
             buttonStrip.WrapContents = false;
 
@@ -82,8 +81,8 @@ namespace UltraWideScreenShare.WinForms
             // minimizeButton
             //
             minimizeButton.FlatStyle = FlatStyle.Flat;
-            minimizeButton.Location = new Point(80, 6);
-            minimizeButton.Margin = new Padding(0, 6, 0, 6);
+            minimizeButton.Location = new Point(80, 0);
+            minimizeButton.Margin = new Padding(0);
             minimizeButton.Name = "minimizeButton";
             minimizeButton.Size = new Size(52, 32);
             minimizeButton.TabIndex = 2;
@@ -94,8 +93,8 @@ namespace UltraWideScreenShare.WinForms
             // maximizeButton
             //
             maximizeButton.FlatStyle = FlatStyle.Flat;
-            maximizeButton.Location = new Point(28, 6);
-            maximizeButton.Margin = new Padding(0, 6, 0, 6);
+            maximizeButton.Location = new Point(28, 0);
+            maximizeButton.Margin = new Padding(0);
             maximizeButton.Name = "maximizeButton";
             maximizeButton.Size = new Size(52, 32);
             maximizeButton.TabIndex = 1;
@@ -106,8 +105,8 @@ namespace UltraWideScreenShare.WinForms
             // closeButton
             //
             closeButton.FlatStyle = FlatStyle.Flat;
-            closeButton.Location = new Point(0, 6);
-            closeButton.Margin = new Padding(0, 6, 0, 6);
+            closeButton.Location = new Point(0, 0);
+            closeButton.Margin = new Padding(0);
             closeButton.Name = "closeButton";
             closeButton.Size = new Size(28, 32);
             closeButton.TabIndex = 0;
@@ -118,9 +117,9 @@ namespace UltraWideScreenShare.WinForms
             // TitleBarWindow
             //
             AutoScaleDimensions = new SizeF(7F, 15F);
-            AutoScaleMode = AutoScaleMode.Font;
+            AutoScaleMode = AutoScaleMode.None;
             BackColor = Color.White;
-            ClientSize = new Size(600, 44);
+            ClientSize = new Size(600, 32);
             ControlBox = false;
             buttonStrip.Controls.Add(closeButton);
             buttonStrip.Controls.Add(maximizeButton);
