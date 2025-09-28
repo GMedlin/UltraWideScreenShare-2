@@ -26,11 +26,11 @@
 
 ### 🟢 Low Priority (Infrastructure)
 
-- [ ] **Issue #5: Modernize to .NET 8**
-  - Status: Ready for Claude
-  - Description: Update from .NET 6 to .NET 8 for better support
+- [x] **Issue #5: Modernize to .NET 9** ✅
+  - Status: Completed
+  - Description: Updated from .NET 6 to .NET 9 with Single-Project MSIX packaging
   - Impact: Future maintenance and security
-  - Action: Comment `@claude` on issue #5
+  - Action: Completed in feature/msix-packaging branch
 
 ## Setup Completed ✅
 
@@ -43,12 +43,12 @@
 
 1. **Test Changes**: Comment `@claude` on GitHub issues
 2. **Local Build**: `dotnet build UltraWideScreenShare.WinForms`
-3. **Local Run**: `dotnet run --project UltraWideScreenShare.WinForms` (requires .NET 6 runtime)
-4. **CI/CD**: Automatic builds on push/PR create downloadable artifacts
+3. **Local Run**: `dotnet run --project UltraWideScreenShare.WinForms` (requires .NET 9 runtime)
+4. **CI/CD**: Automatic builds on push/PR create portable executables and MSIX installer packages
 
 ## Notes
 
 - Start with Issue #2 (DPI bug) as it affects core functionality
-- Install .NET 6 runtime locally for testing: https://dotnet.microsoft.com/en-us/download/dotnet/6.0
-- Modernization (Issue #5) should be done last to avoid complications
+- Install .NET 9 runtime locally for testing: https://dotnet.microsoft.com/en-us/download/dotnet/9.0
+- MSIX packages are now automatically generated for modern deployment alongside portable executables
 - All issues have detailed implementation guidance for Claude

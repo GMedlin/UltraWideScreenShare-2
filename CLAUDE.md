@@ -12,8 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Publish x86: `dotnet publish UltraWideScreenShare.WinForms -c Release -r win-x86 --self-contained -o ./publish/x86`
 
 ### Solution Structure
-- Main project: `UltraWideScreenShare.WinForms` (.NET 6 Windows Forms application)
-- Packaging project: `UltraWideScreenShare.Package` (Windows Application Packaging project for Microsoft Store)
+- Main project: `UltraWideScreenShare.WinForms` (.NET 9 Windows Forms application with Single-Project MSIX packaging)
 - Solution file: `UltraWideScreenShare2.sln`
 
 ## Architecture Overview
@@ -21,10 +20,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a Windows desktop application for ultra-wide screen sharing that uses:
 
 ### Core Technologies
-- .NET 6 with Windows Forms
+- .NET 9 with Windows Forms
 - Microsoft.Windows.CsWin32 for Win32 API access
 - Windows Magnification API for screen capture
 - DPI awareness handling
+- Single-Project MSIX packaging for modern deployment
 
 ### Key Components
 
@@ -56,10 +56,12 @@ Current development priorities are tracked in TASKS.md:
 - DPI awareness and border math issues at non-100% scaling
 - Title bar positioning relative to share region
 - Window position/size persistence
-- .NET 8 modernization
+- .NET 9 migration (completed)
 
 ## CI/CD
-Automated builds run on push/PR via GitHub Actions, producing downloadable x64/x86 artifacts.
+Automated builds run on push/PR via GitHub Actions, producing:
+- Portable executables (x64/x86 self-contained)
+- MSIX installer packages (x64/x86) for modern deployment
 
 ## TASKS.md Updates
 When completing tasks, update the TASKS.md file to reflect current status and remove completed items.
