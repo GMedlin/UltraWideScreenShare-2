@@ -39,7 +39,7 @@ namespace UltraWideScreenShare.WinForms
             //
             // magnifierPanel
             //
-            magnifierPanel.BackColor = Color.Black;
+            magnifierPanel.BackColor = Color.Transparent;
             magnifierPanel.Dock = DockStyle.Fill;
             magnifierPanel.Location = new Point(0, 0);
             magnifierPanel.Margin = new Padding(0);

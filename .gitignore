@@ -277,3 +277,4 @@ appsettings.local.json
 
 # Claude Code local settings
 .claude/
+.code/

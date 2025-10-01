@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Publish x86: `dotnet publish UltraWideScreenShare.WinForms -c Release -r win-x86 --self-contained -o ./publish/x86`
 
 ### Solution Structure
-- Main project: `UltraWideScreenShare.WinForms` (.NET 9 Windows Forms application with Single-Project MSIX packaging)
+- Main project: `UltraWideScreenShare.WinForms` (.NET 9 Windows Forms application)
 - Solution file: `UltraWideScreenShare2.sln`
 
 ## Architecture Overview
@@ -22,46 +22,64 @@ This is a Windows desktop application for ultra-wide screen sharing that uses:
 ### Core Technologies
 - .NET 9 with Windows Forms
 - Microsoft.Windows.CsWin32 for Win32 API access
-- Windows Magnification API for screen capture
-- DPI awareness handling
-- Single-Project MSIX packaging for modern deployment
+- Desktop Duplication API (DXGI) for screen capture
+- Vortice.Direct3D11 and Vortice.DXGI for DirectX interop
+- Per-monitor DPI v2 awareness
+- Portable-only distribution (self-contained executables)
 
 ### Key Components
 
-#### MainWindow.cs (C:\repos\UltraWideScreenShare-2\UltraWideScreenShare.WinForms\MainWindow.cs)
-- Main application window with custom border rendering
+#### MainWindow.cs
+- Main application window with custom yellow border rendering
 - Handles DPI scaling and window positioning
-- Manages the magnifier panel for screen capture
-- Uses 30fps timer for real-time updates
+- Manages magnifierPanel (actually hosts Direct3D swap chain, not a magnifier)
+- Uses 60fps timer (16ms interval) for real-time updates
+- Implements window position/size persistence via Settings
+- Manages transparency when cursor enters capture region
+- Coordinates with detached title bar window
 
-#### Magnifier.cs (C:\repos\UltraWideScreenShare-2\UltraWideScreenShare.WinForms\Magnifier.cs)
-- Wraps Windows Magnification API
-- Creates magnifier window as child of host panel
-- Handles layered window attributes and message filtering
+#### DesktopDuplicationCaptureController.cs
+- Uses Desktop Duplication API (IDXGIOutputDuplication) for screen capture
+- Creates Direct3D11 device and swap chain for rendering
+- Implements self-capture detection via yellow border color sampling
+- Handles monitor enumeration and output duplication setup
+- Manages frame acquisition, region extraction, and presentation
+- Implements error recovery and duplication reinitialization
 
-#### Program.cs (C:\repos\UltraWideScreenShare-2\UltraWideScreenShare.WinForms\Program.cs)
+#### TitleBarWindow.cs
+- Detached title bar window that floats above main window
+- Implements Windows-standard title bar buttons (minimize, maximize/restore, close)
+- Uses system metrics (SM_CYCAPTION, SM_CYSIZE) for proper DPI-aware sizing
+- Handles drag-to-move via parent window coordination
+- Automatically hides when parent is minimized
+
+#### Program.cs
 - Application entry point
-- Enables DPI awareness via SetProcessDPIAware()
-- Configures Windows Forms settings
+- Configures HighDpiMode.PerMonitorV2 for proper DPI scaling
+- Initializes Windows Forms with visual styles
 
 ### Key Architecture Patterns
-- Custom window styling with manual border rendering
+- Custom borderless window with manual border rendering
 - Windows API P/Invoke patterns using CsWin32 code generation
-- Event-driven UI updates via Timer
-- Panel-based magnifier hosting
+- Direct3D11/DXGI interop for hardware-accelerated screen capture
+- Event-driven UI updates via Timer (60fps)
+- Self-capture prevention via pixel color sampling
+- Detached title bar pattern for frameless windows
 
-## Known Issues and Development Priorities
+## Current Status
 
-Current development priorities are tracked in TASKS.md:
-- DPI awareness and border math issues at non-100% scaling
-- Title bar positioning relative to share region
+The application is fully functional with Desktop Duplication API for screen capture. Key features:
+- Real-time screen region capture and display
+- Self-capture prevention (detects own yellow border)
+- DPI-aware UI scaling across all monitors
 - Window position/size persistence
-- .NET 9 migration (completed)
+- Detached title bar with standard Windows controls
+- Compatible with Teams and OBS screen sharing
 
 ## CI/CD
 Automated builds run on push/PR via GitHub Actions, producing:
-- Portable executables (x64/x86 self-contained)
-- MSIX installer packages (x64/x86) for modern deployment
+- Portable self-contained executables (x64/x86)
+- Published as artifacts and GitHub releases
 
 ## TASKS.md Updates
 When completing tasks, update the TASKS.md file to reflect current status and remove completed items.
