@@ -3,9 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 using Timer = System.Windows.Forms.Timer;
@@ -14,10 +12,11 @@ namespace UltraWideScreenShare.WinForms
 {
     public partial class MainWindow : Form
     {
-        private readonly Timer _dispatcherTimer = new() { Interval = 16 };
+        private readonly Timer _dispatcherTimer = new() { Interval = 2 };
         private readonly Timer _savePositionTimer = new() { Interval = 750 };
-        private DesktopDuplicationCaptureController? _captureController;
+        private MagnifierController? _magnifierController;
         private TitleBarWindow? _titleBarWindow;
+        private bool _showMagnifierScheduled;
         private bool _isTransparent;
         private Color _frameColor = Color.FromArgb(255, 255, 221, 0);
         private const int _logicalBorderWidth = 2;
@@ -50,21 +49,9 @@ namespace UltraWideScreenShare.WinForms
 
         private void MainWindow_Load(object? sender, EventArgs e)
         {
-            try
-            {
-                if (!PInvoke.SetWindowDisplayAffinity(new HWND(Handle), WINDOW_DISPLAY_AFFINITY.WDA_EXCLUDEFROMCAPTURE))
-                {
-                    Trace.WriteLine("set_window_display_affinity_failed");
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine($"set_window_display_affinity_error: {ex}");
-            }
-
             RestoreWindowPosition();
 
-            if (!StartDesktopDuplication())
+            if (!StartMagnifier())
             {
                 Close();
                 return;
@@ -73,7 +60,13 @@ namespace UltraWideScreenShare.WinForms
             _dispatcherTimer.Tick += (_, _) =>
             {
                 UpdateTransparency();
-                _captureController?.ProcessFrame();
+                _magnifierController?.UpdateMagnifierWindow();
+
+                if (_showMagnifierScheduled)
+                {
+                    _magnifierController?.ShowMagnifier();
+                    _showMagnifierScheduled = false;
+                }
             };
             _dispatcherTimer.Start();
         }
@@ -101,31 +94,29 @@ namespace UltraWideScreenShare.WinForms
             UpdateTitleBarBounds();
         }
 
-        private bool StartDesktopDuplication()
+        private bool StartMagnifier()
         {
-            var monitorHandle = NativeCaptureUtilities.MonitorFromWindow(Handle);
-            if (monitorHandle == IntPtr.Zero)
-            {
-                MessageBox.Show(this,
-                    "Could not determine the monitor for capture.",
-                    "UltraWideScreenShare",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-                return false;
-            }
-
-            var screen = Screen.FromHandle(Handle);
             try
             {
-                _captureController = new DesktopDuplicationCaptureController(magnifierPanel, GetCaptureRegion);
-                _captureController.Start(monitorHandle, screen.Bounds);
+                _magnifierController = new MagnifierController(magnifierPanel);
+
+                if (!_magnifierController.Initialize())
+                {
+                    MessageBox.Show(this,
+                        "Failed to initialize screen magnification.",
+                        "UltraWideScreenShare",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                    return false;
+                }
+
                 return true;
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"desktop_duplication_start_failed: {ex}");
+                Trace.WriteLine($"magnifier_init_failed: {ex}");
                 MessageBox.Show(this,
-                    "We couldn't start screen capture. Please make sure screen recording is enabled in Settings > Privacy & security > Screen recording and try again.",
+                    "An error occurred initializing screen magnification.",
                     "UltraWideScreenShare",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
@@ -150,9 +141,15 @@ namespace UltraWideScreenShare.WinForms
             }
         }
 
-        private void MainWindow_ResizeBegin(object? sender, EventArgs e) { }
+        private void MainWindow_ResizeBegin(object? sender, EventArgs e)
+        {
+            _magnifierController?.HideMagnifier();
+        }
 
-        private void MainWindow_ResizeEnd(object? sender, EventArgs e) { }
+        private void MainWindow_ResizeEnd(object? sender, EventArgs e)
+        {
+            _showMagnifierScheduled = true;
+        }
 
         private void ToggleWindowState()
         {
@@ -244,10 +241,13 @@ namespace UltraWideScreenShare.WinForms
             SaveWindowPosition();
             _dispatcherTimer.Stop();
             _dispatcherTimer.Dispose();
-            _captureController?.Dispose();
-            _captureController = null;
+
+            _magnifierController?.Dispose();
+            _magnifierController = null;
+
             _savePositionTimer.Stop();
             _savePositionTimer.Dispose();
+
             if (_titleBarWindow != null)
             {
                 _titleBarWindow.Close();
@@ -284,13 +284,6 @@ namespace UltraWideScreenShare.WinForms
         {
             base.OnTextChanged(e);
             _titleBarWindow?.UpdateTitle(Text);
-        }
-
-        private Rectangle GetCaptureRegion()
-        {
-            var rect = magnifierPanel.RectangleToScreen(magnifierPanel.ClientRectangle);
-            rect.Inflate(_borderWidth, _borderWidth);
-            return rect;
         }
 
         private void SaveWindowPositionDelayed()
@@ -388,19 +381,6 @@ namespace UltraWideScreenShare.WinForms
             Location = new Point(
                 screen.Left + (screen.Width - Width) / 2,
                 finalY);
-        }
-    }
-
-    internal static class NativeCaptureUtilities
-    {
-        private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
-
-        [DllImport("user32.dll")]
-        private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
-
-        public static IntPtr MonitorFromWindow(IntPtr hwnd)
-        {
-            return MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
         }
     }
 }
