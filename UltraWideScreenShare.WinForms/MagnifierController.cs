@@ -23,7 +23,7 @@ namespace UltraWideScreenShare.WinForms
             _hostWindowHandle = new HWND(hostControl.Handle);
         }
 
-        public bool Initialize()
+        public unsafe bool Initialize()
         {
             if (_initialized)
             {
