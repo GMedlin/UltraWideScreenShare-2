@@ -33,7 +33,7 @@ namespace UltraWideScreenShare.WinForms
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainWindow));
-            magnifierPanel = new Panel();
+            magnifierPanel = new HitTransparentPanel();
             SuspendLayout();
 
             //
@@ -74,6 +74,6 @@ namespace UltraWideScreenShare.WinForms
 
         #endregion
 
-        private Panel magnifierPanel;
+        private HitTransparentPanel magnifierPanel;
     }
 }

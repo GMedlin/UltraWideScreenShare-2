@@ -13,6 +13,7 @@ namespace UltraWideScreenShare.WinForms
     {
         private readonly HWND _hostWindowHandle;
         private HWND _magnifierWindowHandle;
+        private Windows.Win32.UnhookWindowsHookExSafeHandle? _hook;
         private bool _initialized;
 
         public MagnifierController(Control hostControl)
@@ -45,10 +46,11 @@ namespace UltraWideScreenShare.WinForms
                 LAYERED_WINDOW_ATTRIBUTES_FLAGS.LWA_ALPHA);
 
             // Set up message filter hook - REQUIRED for Teams compatibility
-            PInvoke.SetWindowsHookEx(
+            // Thread ID of 0 installs the hook on the current thread
+            _hook = PInvoke.SetWindowsHookEx(
                 WINDOWS_HOOK_ID.WH_MSGFILTER,
                 FilterMessage,
-                new HINSTANCE(_hostWindowHandle.Value),
+                null,
                 0);
 
             // Create magnifier window as child of host window
@@ -142,6 +144,12 @@ namespace UltraWideScreenShare.WinForms
             {
                 PInvoke.DestroyWindow(_magnifierWindowHandle);
                 _magnifierWindowHandle = default;
+            }
+
+            if (_hook != null)
+            {
+                _hook.Dispose();
+                _hook = null;
             }
 
             if (_initialized)
