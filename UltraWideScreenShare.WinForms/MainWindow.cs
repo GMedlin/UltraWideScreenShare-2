@@ -12,17 +12,19 @@ namespace UltraWideScreenShare.WinForms
 {
     public partial class MainWindow : Form
     {
-        private readonly Timer _dispatcherTimer = new() { Interval = 2 };
+        private readonly Timer _dispatcherTimer = new() { Interval = 16 };
         private readonly Timer _savePositionTimer = new() { Interval = 750 };
         private MagnifierController? _magnifierController;
         private TitleBarWindow? _titleBarWindow;
         private bool _showMagnifierScheduled;
         private bool _isTransparent;
-        private Color _frameColor = Color.FromArgb(255, 255, 221, 0);
+        private Color _frameColor = Color.FromArgb(255, 128, 128, 128);
         private const int _logicalBorderWidth = 2;
         private const int _logicalTitleBarHeight = 32;
+        private const int _logicalResizeMargin = 8;
         private int _borderWidth = 2;
         private int _titleBarHeight = _logicalTitleBarHeight;
+        private int _resizeMargin = _logicalResizeMargin;
 
         public MainWindow()
         {
@@ -44,7 +46,14 @@ namespace UltraWideScreenShare.WinForms
             float scale = dpi / 96f;
             _borderWidth = Math.Max(1, (int)Math.Round(_logicalBorderWidth * scale));
             _titleBarHeight = (int)Math.Round(_logicalTitleBarHeight * scale);
+            _resizeMargin = Math.Max(6, (int)Math.Round(_logicalResizeMargin * scale));
             Padding = new Padding(_borderWidth);
+
+            // Propagate resize margin to the panel for hit-test transparency
+            if (magnifierPanel is HitTransparentPanel htp)
+            {
+                htp.EffectiveResizeMargin = _resizeMargin;
+            }
         }
 
         private void MainWindow_Load(object? sender, EventArgs e)
@@ -127,7 +136,9 @@ namespace UltraWideScreenShare.WinForms
         private void UpdateTransparency()
         {
             var cursor = PointToClient(Cursor.Position);
-            bool insideCapture = magnifierPanel.Bounds.Contains(cursor);
+            // Leave a non-transparent resize band around the edges
+            var captureBounds = Rectangle.Inflate(magnifierPanel.Bounds, -_resizeMargin, -_resizeMargin);
+            bool insideCapture = captureBounds.Contains(cursor);
 
             if (insideCapture && !_isTransparent)
             {
@@ -212,28 +223,36 @@ namespace UltraWideScreenShare.WinForms
         {
             switch (m.Msg)
             {
+                case WM_NCHITTEST:
+                    // Perform our custom hit-test first
+                    this.TryResize(ref m, _resizeMargin);
+                    if (m.Result != IntPtr.Zero)
+                    {
+                        return; // Prevent base from overriding our HT*
+                    }
+                    break;
+
                 case WM_NCCALCSIZE:
                     return;
+
                 case WM_NCACTIVATE:
                     m.Result = new IntPtr(-1);
                     return;
             }
 
             base.WndProc(ref m);
-
-            if (m.Msg == WM_NCHITTEST)
-            {
-                this.TryResize(ref m, _borderWidth);
-            }
         }
 
         private void MainWindow_Paint(object? sender, PaintEventArgs e)
         {
-            ControlPaint.DrawBorder(e.Graphics, ClientRectangle,
-                _frameColor, _borderWidth, ButtonBorderStyle.Solid,
-                _frameColor, _borderWidth, ButtonBorderStyle.Solid,
-                _frameColor, _borderWidth, ButtonBorderStyle.Solid,
-                _frameColor, _borderWidth, ButtonBorderStyle.Solid);
+            if (_borderWidth > 0 && _frameColor.A > 0)
+            {
+                ControlPaint.DrawBorder(e.Graphics, ClientRectangle,
+                    _frameColor, _borderWidth, ButtonBorderStyle.Solid,
+                    _frameColor, _borderWidth, ButtonBorderStyle.Solid,
+                    _frameColor, _borderWidth, ButtonBorderStyle.Solid,
+                    _frameColor, _borderWidth, ButtonBorderStyle.Solid);
+            }
         }
 
         protected override void OnClosing(CancelEventArgs e)

@@ -182,7 +182,26 @@ namespace UltraWideScreenShare.WinForms
 
         protected override void WndProc(ref Message m)
         {
+            const int WM_NCHITTEST = 0x0084;
             const int WM_DPICHANGED = 0x02E0;
+            const int HTTRANSPARENT = -1;
+
+            if (m.Msg == WM_NCHITTEST)
+            {
+                // Compute the same effective resize margin as the main window
+                int margin = Math.Max(6, (int)Math.Round(8f * DeviceDpi / 96f));
+
+                // Convert current cursor to client coordinates
+                var clientPos = PointToClient(Cursor.Position);
+
+                // If cursor is within bottom margin band of title bar, let hit-testing fall through
+                if (clientPos.Y >= this.ClientSize.Height - margin)
+                {
+                    m.Result = (IntPtr)HTTRANSPARENT; // allow main window to receive WM_NCHITTEST
+                    return;
+                }
+            }
+
             if (m.Msg == WM_DPICHANGED)
             {
                 // LOWORD = X dpi, HIWORD = Y dpi (typically equal)
