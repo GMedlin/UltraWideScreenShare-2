@@ -17,7 +17,6 @@ namespace UltraWideScreenShare.WinForms
         }
 
 
-        const int WS_EX_LAYERED = 0x80000;
         const int WS_EX_TRANSPARENT = 0x20;
         public static void SetTransparency(this Form window, bool transparent)
         {
@@ -25,7 +24,7 @@ namespace UltraWideScreenShare.WinForms
             if (transparent)
             {
                 var extendedStyle = PInvoke.GetWindowLong(hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
-                PInvoke.SetWindowLong(hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, extendedStyle | WS_EX_TRANSPARENT | WS_EX_LAYERED);
+                PInvoke.SetWindowLong(hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, extendedStyle | WS_EX_TRANSPARENT);
             }
             else
             {
