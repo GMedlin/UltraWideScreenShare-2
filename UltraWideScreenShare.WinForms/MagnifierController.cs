@@ -102,8 +102,8 @@ namespace UltraWideScreenShare.WinForms
             // Set the source rectangle for magnification
             PInvoke.MagSetWindowSource(_magnifierWindowHandle, magnificationArea);
 
-            // Force redraw
-            PInvoke.InvalidateRect(_magnifierWindowHandle, (RECT?)null, new BOOL(1));
+            // Force redraw (bErase=FALSE to prevent flickering)
+            PInvoke.InvalidateRect(_magnifierWindowHandle, (RECT?)null, new BOOL(0));
         }
 
         public void ShowMagnifier()
@@ -114,7 +114,7 @@ namespace UltraWideScreenShare.WinForms
             }
 
             PInvoke.ShowWindow(_magnifierWindowHandle, SHOW_WINDOW_CMD.SW_RESTORE);
-            PInvoke.InvalidateRect(_magnifierWindowHandle, (RECT?)null, new BOOL(1));
+            PInvoke.InvalidateRect(_magnifierWindowHandle, (RECT?)null, new BOOL(0));
         }
 
         public void HideMagnifier()
@@ -125,7 +125,7 @@ namespace UltraWideScreenShare.WinForms
             }
 
             PInvoke.ShowWindow(_magnifierWindowHandle, SHOW_WINDOW_CMD.SW_HIDE);
-            PInvoke.InvalidateRect(_magnifierWindowHandle, (RECT?)null, new BOOL(1));
+            PInvoke.InvalidateRect(_magnifierWindowHandle, (RECT?)null, new BOOL(0));
         }
 
         private unsafe RECT GetMagnificationAreaRECT()
